@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arbeitszeit & Lohnrechner V1</title>
+    <title>Arbeitszeit & Lohnrechner</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
@@ -20,7 +20,7 @@
         .card {
             background-color: white;
             border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba{0, 0, 0, 0.06);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
             padding: 1.5rem;
             margin-bottom: 1.5rem;
         }
@@ -45,17 +45,6 @@
         }
         .btn-danger:hover {
             background-color: #dc2626; /* Red 600 */
-        }
-        .btn-secondary {
-            background-color: #f3f4f6;
-            color: #4b5563;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: background-color 0.2s;
-        }
-        .btn-secondary:hover {
-            background-color: #e5e7eb;
         }
         /* Custom Table Styling */
         .summary-table th, .summary-table td {
@@ -94,6 +83,18 @@
             width: 90%;
             max-width: 400px;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+        }
+        /* Style for secondary button in modal */
+        .btn-secondary {
+            background-color: #f3f4f6;
+            color: #4b5563;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        .btn-secondary:hover {
+            background-color: #e5e7eb;
         }
     </style>
 </head>
@@ -158,6 +159,19 @@
                 <p class="text-sm font-medium text-blue-700">Errechneter Lohn: <span id="monthlyTotalEarnings" class="font-bold">0,00</span> €</p>
             </div>
 
+            <!-- NEUES GEMINI-FEATURE: Rechnungsentwurf Button -->
+            <button onclick="generateInvoiceDraft()" id="generateDraftButton" class="btn-primary w-full sm:w-auto mt-4 mb-4 flex items-center justify-center">
+                <span id="draftButtonText">✨ Rechnungsentwurf generieren</span>
+                <span id="draftSpinner" class="hidden ml-2 inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+            </button>
+            
+            <div id="draftOutput" class="hidden card bg-gray-50 border border-gray-200 mt-4 p-4">
+                <h3 class="text-lg font-semibold mb-2 text-gray-800">Generierter Rechnungsentwurf (Text)</h3>
+                <p id="draftContent" class="whitespace-pre-wrap text-sm text-gray-600"></p>
+                <button onclick="copyToClipboard('draftContent')" class="btn-primary mt-3 text-sm py-2 px-3">In die Zwischenablage kopieren</button>
+            </div>
+
+
             <div class="overflow-x-auto">
                 <table class="summary-table w-full border-collapse">
                     <thead>
@@ -194,9 +208,11 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, orderBy, deleteDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Core Environment Variables (MANDATORY in Canvas, now set to public defaults) ---
-        // Wenn die App außerhalb des Canvas läuft, sind __app_id, __firebase_config und __initial_auth_token
-        // NICHT definiert. Wir müssen Fallbacks für ein normales Hosting erstellen.
+        // --- LLM API Setup ---
+        const apiKey = ""; 
+        const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+        // --- Core Environment Variables (MANDATORY) ---
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
@@ -239,7 +255,6 @@
                 modal.style.display = 'flex';
             });
         }
-        window.showMessage = showMessage; // Expose globally
 
         /**
          * Zeigt eine Bestätigungsaufforderung an (ersetzt confirm()).
@@ -290,35 +305,127 @@
         function updateUIStatus(mode) {
             const statusDiv = document.getElementById('statusMessage');
             const modeDisplay = document.getElementById('storageModeDisplay');
-            const userIdDisplay = document.getElementById('userIdDisplay');
             
             if (mode === 'firebase') {
                 statusDiv.classList.add('hidden');
                 modeDisplay.textContent = 'Cloud (Firebase)';
                 modeDisplay.classList.remove('text-yellow-600');
                 modeDisplay.classList.add('text-blue-600');
-                userIdDisplay.textContent = userId;
             } else {
                 statusDiv.classList.remove('hidden');
-                document.getElementById('statusText').textContent = 
-                    (firebaseConfig && !initialAuthToken) 
-                        ? 'WARNUNG: Firebase Config ist vorhanden, aber die Anmeldedaten fehlen. Nur lokale Speicherung.' 
-                        : 'Die Firebase-Datenbank ist nicht verbunden. Die Daten werden lokal im Browser gespeichert (localStorage) und nicht synchronisiert.';
-
                 modeDisplay.textContent = 'Lokal (localStorage)';
                 modeDisplay.classList.remove('text-blue-600');
                 modeDisplay.classList.add('text-yellow-600');
-                userIdDisplay.textContent = 'Lokal / Nicht verbunden';
             }
+        }
+        
+        function copyToClipboard(elementId) {
+            const text = document.getElementById(elementId).innerText;
+            // Using document.execCommand('copy') as navigator.clipboard might fail in an iframe
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showMessage('Text in die Zwischenablage kopiert!');
+            } catch (err) {
+                console.error('Kopieren fehlgeschlagen:', err);
+                showMessage('Kopieren fehlgeschlagen. Bitte manuell kopieren.');
+            }
+            document.body.removeChild(textarea);
+        }
+        window.copyToClipboard = copyToClipboard; // Expose globally
+
+
+        // --- Gemini Integration Function ---
+
+        window.generateInvoiceDraft = async function() {
+            const button = document.getElementById('generateDraftButton');
+            const spinner = document.getElementById('draftSpinner');
+            const outputDiv = document.getElementById('draftOutput');
+            const outputContent = document.getElementById('draftContent');
+
+            const totalHours = parseFloat(document.getElementById('monthlyTotalHours').textContent.replace(',', '.'));
+            const totalEarningsDisplay = document.getElementById('monthlyTotalEarnings').textContent;
+
+            if (totalHours <= 0) {
+                showMessage('Es sind keine Arbeitszeiten für diesen Monat erfasst, um einen Rechnungsentwurf zu erstellen.');
+                return;
+            }
+
+            // Prepare UI for loading
+            outputDiv.classList.add('hidden');
+            button.disabled = true;
+            spinner.classList.remove('hidden');
+            document.getElementById('draftButtonText').textContent = 'Generiere Entwurf...';
+
+
+            const systemPrompt = `Sie sind ein professioneller Finanzassistent. Ihre Aufgabe ist es, einen formellen Text für eine Rechnung zu erstellen. Der Text muss auf Deutsch sein, die erfassten Daten (Stunden, Lohn, Rate) enthalten und wie ein offizielles Dokument strukturiert sein, einschließlich einer höflichen Zahlungsaufforderung und der Angabe des Leistungszeitraums. Der Text sollte keinen Betreff oder eine Anrede ("Sehr geehrte Damen und Herren") enthalten, da er für den Körper einer E-Mail oder den Inhalt eines Rechnungsdokuments bestimmt ist.`;
+
+            const selectedMonth = document.getElementById('monthSelect').options[document.getElementById('monthSelect').selectedIndex].text;
+            const selectedYear = document.getElementById('yearSelect').value;
+
+            // Wichtig: Verwende die Dezimalstunden für die Berechnung, aber die angezeigte Lohnauszahlung (mit Komma) für den LLM-Prompt, da dieser Text generiert.
+            const userQuery = `Erstelle einen professionellen Rechnungstext für folgende Leistungserfassung:\n- Leistungszeitraum: ${selectedMonth} ${selectedYear}\n- Gearbeitete Stunden (Dezimal): ${totalHours.toFixed(2)}\n- Stundenlohn: ${window.hourlyRate.toFixed(2)} €\n- Gesamtbetrag: ${totalEarningsDisplay} €\n\nSchreibe den Text in einem formellen, höflichen Stil.`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+            };
+
+            let resultText = "Fehler: Konnte keinen Entwurf generieren. Bitte versuchen Sie es später erneut.";
+            let retries = 0;
+            const maxRetries = 3;
+
+            // Implementation of exponential backoff
+            while (retries < maxRetries) {
+                try {
+                    const response = await fetch(GEMINI_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    
+                    if (text) {
+                        resultText = text;
+                        break; // Success
+                    } else {
+                        throw new Error("Empty response from API.");
+                    }
+                } catch (error) {
+                    console.error(`Versuch ${retries + 1} fehlgeschlagen:`, error);
+                    retries++;
+                    if (retries < maxRetries) {
+                        const delay = Math.pow(2, retries) * 1000;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
+                }
+            }
+
+
+            // Update UI after operation
+            outputContent.textContent = resultText;
+            outputDiv.classList.remove('hidden');
+            button.disabled = false;
+            spinner.classList.add('hidden');
+            document.getElementById('draftButtonText').textContent = '✨ Rechnungsentwurf generieren';
         }
 
 
         // --- Firebase/Local Storage Initialization and Auth ---
 
         async function initializeFirebase() {
-            // WICHTIG: Wenn die App außerhalb des Canvas gehostet wird, sind die Variablen null.
-            if (!firebaseConfig || !initialAuthToken) {
-                console.warn("Firebase Config oder Auth Token nicht gefunden. Starte im lokalen Modus.");
+            if (!firebaseConfig) {
+                console.warn("Firebase Config nicht gefunden. Starte im lokalen Modus.");
+                document.getElementById('userIdDisplay').textContent = 'Lokal';
                 updateUIStatus('local');
                 isFirebaseReady = false;
                 loadSettingsLocal();
@@ -336,6 +443,7 @@
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         userId = user.uid;
+                        document.getElementById('userIdDisplay').textContent = userId;
                         
                         entriesRef = collection(db, `artifacts/${appId}/users/${userId}/entries`);
                         settingsRef = doc(db, `artifacts/${appId}/users/${userId}/settings/rate`);
@@ -348,7 +456,7 @@
                         populateMonthYearSelectors();
                         
                     } else {
-                        // Anonymes Anmelden, wenn Token nicht verfügbar (sollte im Canvas nicht passieren)
+                        // Anonymes Anmelden
                         if (initialAuthToken) {
                             await signInWithCustomToken(auth, initialAuthToken);
                         } else {
@@ -359,7 +467,8 @@
 
             } catch (e) {
                 console.error("Fehler bei der Firebase Initialisierung/Authentifizierung:", e);
-                // Fallback, wenn Firebase fehlschlägt
+                // Fallback, wenn Firebase fehlschlägt, obwohl die Config vorhanden war (selten)
+                document.getElementById('userIdDisplay').textContent = 'Fehler (Lokal)';
                 updateUIStatus('local');
                 isFirebaseReady = false;
                 loadSettingsLocal();
@@ -406,6 +515,7 @@
                 const newEntries = [];
                 snapshot.forEach((doc) => {
                     const data = doc.data();
+                    // Firestore Timestamp-Objekte oder ISO-Strings in Date-Objekte umwandeln
                     const startTime = data.startTime.toDate ? data.startTime.toDate() : new Date(data.startTime);
                     const endTime = data.endTime.toDate ? data.endTime.toDate() : new Date(data.endTime);
                     
@@ -431,7 +541,7 @@
         async function addTimeEntryFirebase(newEntry) {
             if (!entriesRef) return;
             try {
-                await setDoc(doc(entriesRef), newEntry); 
+                await setDoc(doc(entriesRef), newEntry);
                 console.log("Zeiteintrag erfolgreich in Firebase hinzugefügt:", newEntry);
                 return true;
             } catch (e) {
@@ -616,7 +726,6 @@
             const monthSelect = document.getElementById('monthSelect');
             const yearSelect = document.getElementById('yearSelect');
             
-            // Monate
             monthSelect.innerHTML = '';
             monthNames.forEach((name, index) => {
                 const month = index + 1;
@@ -624,7 +733,6 @@
                 monthSelect.add(option);
             });
             
-            // Jahre
             const years = new Set([currentYear]);
             window.allEntries.forEach(entry => years.add(new Date(entry.date).getFullYear()));
             
@@ -634,15 +742,20 @@
                 yearSelect.add(option);
             });
             
-            // Selektion auf aktuellen Monat/Jahr setzen
-            monthSelect.value = currentMonth.toString().padStart(2, '0');
-            yearSelect.value = currentYear.toString();
+            // Setzt die Auswahl auf den aktuellen Monat/Jahr oder den zuletzt verwendeten, falls verfügbar
+            const lastEntryDate = window.allEntries.length > 0 ? new Date(window.allEntries[0].date) : now;
+            
+            monthSelect.value = (lastEntryDate.getMonth() + 1).toString().padStart(2, '0');
+            yearSelect.value = lastEntryDate.getFullYear().toString();
         }
 
         window.filterEntries = function() {
             const selectedMonth = document.getElementById('monthSelect').value;
             const selectedYear = document.getElementById('yearSelect').value;
             const entryList = document.getElementById('timeEntryList');
+            
+            // Verstecke den Entwurf, wenn der Filter geändert wird
+            document.getElementById('draftOutput').classList.add('hidden');
             
             let monthlyTotalMs = 0;
             
@@ -653,6 +766,9 @@
                 return entryMonth === selectedMonth && entryYear === selectedYear;
             });
             
+            // Sortiere nach Datum, neueste zuerst
+            filteredEntries.sort((a, b) => new Date(b.date) - new Date(a.date));
+
             entryList.innerHTML = '';
             
             if (filteredEntries.length === 0) {
@@ -692,6 +808,7 @@
             const totalEarnings = monthlyTotalDecimalHours * window.hourlyRate;
             
             document.getElementById('monthlyTotalHours').textContent = monthlyTotalDecimalHours.toFixed(2);
+            // Ersetze den Dezimalpunkt durch ein Komma für die Anzeige
             document.getElementById('monthlyTotalEarnings').textContent = totalEarnings.toFixed(2).replace('.', ',');
         }
 
