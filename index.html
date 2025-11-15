@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arbeitszeit & Lohnrechner V1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fc;
+            color: #1f2937;
+        }
+        .container {
+            max-width: 95%;
+            margin: auto;
+            padding: 1rem;
+        }
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba{0, 0, 0, 0.06);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .btn-primary {
+            background-color: #3b82f6; /* Blue 500 */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #2563eb; /* Blue 600 */
+        }
+        .btn-danger {
+            background-color: #ef4444; /* Red 500 */
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626; /* Red 600 */
+        }
+        .btn-secondary {
+            background-color: #f3f4f6;
+            color: #4b5563;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        .btn-secondary:hover {
+            background-color: #e5e7eb;
+        }
+        /* Custom Table Styling */
+        .summary-table th, .summary-table td {
+            padding: 0.5rem 0.5rem;
+            text-align: left;
+        }
+        .summary-table th {
+            background-color: #eff6ff; /* Blue 50 */
+            color: #1e40af; /* Blue 800 */
+            font-weight: 600;
+            border-bottom: 2px solid #bfdbfe;
+        }
+        .summary-table tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+        .summary-table tr:last-child td {
+            border-bottom: none;
+        }
+        /* Modal Backdrop */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app" class="container">
+        <h1 class="text-3xl font-bold mb-6 text-center text-blue-700">Zeiterfassungs-App</h1>
+
+        <!-- System Status Warning -->
+        <div id="statusMessage" class="hidden bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4 rounded-lg" role="alert">
+            <p class="font-bold">Hinweis:</p>
+            <p id="statusText">Die Firebase-Datenbank ist nicht verbunden. Die Daten werden lokal im Browser gespeichert (`localStorage`) und nicht synchronisiert.</p>
+        </div>
+
+        <!-- User Info / Settings Card -->
+        <div class="card">
+            <h2 class="text-xl font-semibold mb-3">Einstellungen</h2>
+            <div class="flex flex-col sm:flex-row sm:space-x-4 space-y-3 sm:space-y-0 items-end">
+                <div class="flex-grow w-full">
+                    <label for="hourlyRate" class="block text-sm font-medium text-gray-700 mb-1">Stundenlohn (€)</label>
+                    <input type="number" id="hourlyRate" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500" value="20" min="0.01" step="0.01">
+                </div>
+                <button onclick="saveSettings()" class="btn-primary w-full sm:w-auto">Stundenlohn speichern</button>
+            </div>
+            <div class="mt-4 text-sm text-gray-500">
+                <p>Speichermodus: <span id="storageModeDisplay" class="font-semibold text-blue-600">Lokal (localStorage)</span></p>
+                <p>Nutzer-ID: <span id="userIdDisplay" class="font-mono text-xs bg-gray-100 p-1 rounded">Wird geladen...</span></p>
+            </div>
+        </div>
+
+        <!-- Time Entry Card -->
+        <div class="card">
+            <h2 class="text-xl font-semibold mb-3">Neue Arbeitszeit erfassen</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="dateInput" class="block text-sm font-medium text-gray-700 mb-1">Datum</label>
+                    <input type="date" id="dateInput" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="startTimeInput" class="block text-sm font-medium text-gray-700 mb-1">Startzeit</label>
+                    <input type="time" id="startTimeInput" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="endTimeInput" class="block text-sm font-medium text-gray-700 mb-1">Endzeit</label>
+                    <input type="time" id="endTimeInput" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+            <button onclick="addTimeEntry()" id="saveButton" class="btn-primary mt-4 w-full">Zeiteintrag speichern</button>
+        </div>
+
+        <!-- Monthly Summary & Archive Card -->
+        <div class="card">
+            <h2 class="text-xl font-semibold mb-3">Monatsübersicht & Archiv</h2>
+            
+            <div class="flex space-x-2 mb-4">
+                <select id="monthSelect" onchange="filterEntries()" class="flex-grow border border-gray-300 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500"></select>
+                <select id="yearSelect" onchange="filterEntries()" class="w-32 border border-gray-300 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500"></select>
+            </div>
+
+            <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4 rounded-lg">
+                <p class="text-sm font-medium text-blue-700">Gesamtzeit diesen Monat: <span id="monthlyTotalHours" class="font-bold">0,00</span> Stunden (Industriezeit)</p>
+                <p class="text-sm font-medium text-blue-700">Errechneter Lohn: <span id="monthlyTotalEarnings" class="font-bold">0,00</span> €</p>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="summary-table w-full border-collapse">
+                    <thead>
+                        <tr>
+                            <th class="rounded-tl-lg">Datum</th>
+                            <th>Start</th>
+                            <th>Ende</th>
+                            <th>Dauer (H:MM)</th>
+                            <th class="rounded-tr-lg">Dauer (Dezimal)</th>
+                            <th>Löschen</th>
+                        </tr>
+                    </thead>
+                    <tbody id="timeEntryList">
+                        <tr><td colspan="6" class="text-center py-4 text-gray-500">Keine Einträge für diesen Monat.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Modal / Confirmation Dialog -->
+    <div id="customModal" class="modal-backdrop">
+        <div class="modal-content">
+            <p id="modalMessage" class="text-lg font-semibold mb-4"></p>
+            <div id="modalActions" class="flex justify-end space-x-3">
+                <!-- Buttons will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Integration -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, orderBy, deleteDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Core Environment Variables (MANDATORY in Canvas, now set to public defaults) ---
+        // Wenn die App außerhalb des Canvas läuft, sind __app_id, __firebase_config und __initial_auth_token
+        // NICHT definiert. Wir müssen Fallbacks für ein normales Hosting erstellen.
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app;
+        let db;
+        let auth;
+        let userId = null;
+        let entriesRef = null;
+        let settingsRef = null;
+        let unsubscribeEntries = null;
+        let isFirebaseReady = false;
+
+        // Global data store
+        window.allEntries = [];
+        window.hourlyRate = 20; // Default
+
+        // --- Custom Modal / Replacement for alert() and confirm() ---
+
+        /**
+         * Zeigt eine benutzerdefinierte Meldung an (ersetzt alert()).
+         */
+        function showMessage(message) {
+            return new Promise(resolve => {
+                const modal = document.getElementById('customModal');
+                document.getElementById('modalMessage').textContent = message;
+                
+                const actions = document.getElementById('modalActions');
+                actions.innerHTML = '';
+                
+                const okButton = document.createElement('button');
+                okButton.className = 'btn-primary';
+                okButton.textContent = 'OK';
+                okButton.onclick = () => {
+                    modal.style.display = 'none';
+                    resolve(true);
+                };
+                
+                actions.appendChild(okButton);
+                modal.style.display = 'flex';
+            });
+        }
+        window.showMessage = showMessage; // Expose globally
+
+        /**
+         * Zeigt eine Bestätigungsaufforderung an (ersetzt confirm()).
+         */
+        function showConfirm(message) {
+            return new Promise(resolve => {
+                const modal = document.getElementById('customModal');
+                document.getElementById('modalMessage').textContent = message;
+
+                const actions = document.getElementById('modalActions');
+                actions.innerHTML = '';
+
+                const cancelButton = document.createElement('button');
+                cancelButton.className = 'btn-secondary';
+                cancelButton.textContent = 'Abbrechen';
+                cancelButton.onclick = () => {
+                    modal.style.display = 'none';
+                    resolve(false);
+                };
+
+                const confirmButton = document.createElement('button');
+                confirmButton.className = 'btn-danger';
+                confirmButton.textContent = 'Bestätigen';
+                confirmButton.onclick = () => {
+                    modal.style.display = 'none';
+                    resolve(true);
+                };
+
+                actions.appendChild(cancelButton);
+                actions.appendChild(confirmButton);
+                modal.style.display = 'flex';
+            });
+        }
+
+        // --- Utility Functions ---
+
+        function msToDecimalHours(durationMs) {
+            return parseFloat((durationMs / (1000 * 60 * 60)).toFixed(2));
+        }
+
+        function msToHMM(durationMs) {
+            const totalMinutes = Math.floor(durationMs / (1000 * 60));
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            return `${hours}:${minutes.toString().padStart(2, '0')}`;
+        }
+        
+        function updateUIStatus(mode) {
+            const statusDiv = document.getElementById('statusMessage');
+            const modeDisplay = document.getElementById('storageModeDisplay');
+            const userIdDisplay = document.getElementById('userIdDisplay');
+            
+            if (mode === 'firebase') {
+                statusDiv.classList.add('hidden');
+                modeDisplay.textContent = 'Cloud (Firebase)';
+                modeDisplay.classList.remove('text-yellow-600');
+                modeDisplay.classList.add('text-blue-600');
+                userIdDisplay.textContent = userId;
+            } else {
+                statusDiv.classList.remove('hidden');
+                document.getElementById('statusText').textContent = 
+                    (firebaseConfig && !initialAuthToken) 
+                        ? 'WARNUNG: Firebase Config ist vorhanden, aber die Anmeldedaten fehlen. Nur lokale Speicherung.' 
+                        : 'Die Firebase-Datenbank ist nicht verbunden. Die Daten werden lokal im Browser gespeichert (localStorage) und nicht synchronisiert.';
+
+                modeDisplay.textContent = 'Lokal (localStorage)';
+                modeDisplay.classList.remove('text-blue-600');
+                modeDisplay.classList.add('text-yellow-600');
+                userIdDisplay.textContent = 'Lokal / Nicht verbunden';
+            }
+        }
+
+
+        // --- Firebase/Local Storage Initialization and Auth ---
+
+        async function initializeFirebase() {
+            // WICHTIG: Wenn die App außerhalb des Canvas gehostet wird, sind die Variablen null.
+            if (!firebaseConfig || !initialAuthToken) {
+                console.warn("Firebase Config oder Auth Token nicht gefunden. Starte im lokalen Modus.");
+                updateUIStatus('local');
+                isFirebaseReady = false;
+                loadSettingsLocal();
+                startListeningForEntriesLocal();
+                return;
+            }
+            
+            // Firebase-spezifische Initialisierung
+            setLogLevel('debug');
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        
+                        entriesRef = collection(db, `artifacts/${appId}/users/${userId}/entries`);
+                        settingsRef = doc(db, `artifacts/${appId}/users/${userId}/settings/rate`);
+
+                        isFirebaseReady = true;
+                        updateUIStatus('firebase');
+                        
+                        loadSettingsFirebase();
+                        startListeningForEntriesFirebase();
+                        populateMonthYearSelectors();
+                        
+                    } else {
+                        // Anonymes Anmelden, wenn Token nicht verfügbar (sollte im Canvas nicht passieren)
+                        if (initialAuthToken) {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    }
+                });
+
+            } catch (e) {
+                console.error("Fehler bei der Firebase Initialisierung/Authentifizierung:", e);
+                // Fallback, wenn Firebase fehlschlägt
+                updateUIStatus('local');
+                isFirebaseReady = false;
+                loadSettingsLocal();
+                startListeningForEntriesLocal();
+            }
+        }
+
+        // --- Data Handling (Firebase) ---
+
+        async function loadSettingsFirebase() {
+            if (!settingsRef) return;
+            try {
+                const docSnap = await getDoc(settingsRef);
+                if (docSnap.exists() && docSnap.data().hourlyRate) {
+                    window.hourlyRate = docSnap.data().hourlyRate;
+                    document.getElementById('hourlyRate').value = window.hourlyRate.toFixed(2);
+                }
+            } catch (e) {
+                console.error("Fehler beim Laden der Firebase Einstellungen:", e);
+            }
+        }
+
+        async function saveSettingsFirebase(newRate) {
+            if (!settingsRef) return;
+            try {
+                await setDoc(settingsRef, { hourlyRate: newRate });
+                console.log("Stundenlohn erfolgreich in Firebase gespeichert:", newRate);
+            } catch (e) {
+                console.error("Fehler beim Speichern der Firebase Einstellungen:", e);
+                showMessage('Fehler beim Speichern der Einstellungen in der Cloud.');
+            }
+        }
+
+        function startListeningForEntriesFirebase() {
+            if (!entriesRef) return;
+
+            const q = query(entriesRef); 
+
+            if (unsubscribeEntries) {
+                unsubscribeEntries(); 
+            }
+
+            unsubscribeEntries = onSnapshot(q, (snapshot) => {
+                const newEntries = [];
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const startTime = data.startTime.toDate ? data.startTime.toDate() : new Date(data.startTime);
+                    const endTime = data.endTime.toDate ? data.endTime.toDate() : new Date(data.endTime);
+                    
+                    newEntries.push({
+                        id: doc.id,
+                        date: data.date,
+                        startTime: startTime,
+                        endTime: endTime,
+                        durationMs: endTime.getTime() - startTime.getTime()
+                    });
+                });
+                
+                newEntries.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                window.allEntries = newEntries;
+                populateMonthYearSelectors();
+                filterEntries(); 
+            }, (error) => {
+                console.error("Fehler beim Abrufen der Firebase Zeiteinträge:", error);
+            });
+        }
+
+        async function addTimeEntryFirebase(newEntry) {
+            if (!entriesRef) return;
+            try {
+                await setDoc(doc(entriesRef), newEntry); 
+                console.log("Zeiteintrag erfolgreich in Firebase hinzugefügt:", newEntry);
+                return true;
+            } catch (e) {
+                console.error("Fehler beim Hinzufügen des Eintrags in Firebase:", e);
+                showMessage('Fehler beim Speichern des Eintrags in der Cloud.');
+                return false;
+            }
+        }
+        
+        async function deleteEntryFirebase(id) {
+            if (!entriesRef) return;
+            try {
+                const docToDeleteRef = doc(entriesRef, id);
+                await deleteDoc(docToDeleteRef);
+                console.log("Eintrag erfolgreich aus Firebase gelöscht:", id);
+                return true;
+            } catch (e) {
+                console.error("Fehler beim Löschen des Eintrags aus Firebase:", e);
+                showMessage('Fehler beim Löschen des Eintrags aus der Cloud.');
+                return false;
+            }
+        }
+
+
+        // --- Data Handling (Local Storage Fallback) ---
+
+        const LOCAL_ENTRIES_KEY = 'zeitrechner_entries';
+        const LOCAL_RATE_KEY = 'zeitrechner_rate';
+
+        function loadSettingsLocal() {
+            const rate = localStorage.getItem(LOCAL_RATE_KEY);
+            if (rate) {
+                window.hourlyRate = parseFloat(rate);
+                document.getElementById('hourlyRate').value = window.hourlyRate.toFixed(2);
+            }
+        }
+
+        function saveSettingsLocal(newRate) {
+            localStorage.setItem(LOCAL_RATE_KEY, newRate.toFixed(2));
+            console.log("Stundenlohn lokal gespeichert:", newRate);
+        }
+
+        function startListeningForEntriesLocal() {
+            const storedEntries = JSON.parse(localStorage.getItem(LOCAL_ENTRIES_KEY) || '[]');
+            // Daten aus JSON in Date-Objekte umwandeln
+            const processedEntries = storedEntries.map(entry => ({
+                ...entry,
+                startTime: new Date(entry.startTime),
+                endTime: new Date(entry.endTime),
+            }));
+
+            processedEntries.sort((a, b) => new Date(b.date) - new Date(a.date));
+            window.allEntries = processedEntries;
+            populateMonthYearSelectors();
+            filterEntries();
+        }
+        
+        function saveEntriesLocal() {
+            // Speichern: Date-Objekte wieder in ISO-Strings umwandeln
+            const serializableEntries = window.allEntries.map(entry => ({
+                ...entry,
+                startTime: entry.startTime.toISOString(),
+                endTime: entry.endTime.toISOString(),
+            }));
+            localStorage.setItem(LOCAL_ENTRIES_KEY, JSON.stringify(serializableEntries));
+            filterEntries(); // UI aktualisieren
+        }
+        
+        function addTimeEntryLocal(newEntry) {
+            // Füge eine lokale, temporäre ID hinzu
+            newEntry.id = Date.now().toString() + Math.random().toString(36).substring(2, 9);
+            window.allEntries.unshift(newEntry); // Am Anfang einfügen (da schon sortiert)
+            saveEntriesLocal();
+            return true;
+        }
+
+        function deleteEntryLocal(id) {
+            const initialLength = window.allEntries.length;
+            window.allEntries = window.allEntries.filter(entry => entry.id !== id);
+            if (window.allEntries.length < initialLength) {
+                saveEntriesLocal();
+                return true;
+            }
+            return false;
+        }
+
+
+        // --- Global Entry Points (Dispatch to Firebase or Local) ---
+
+        window.saveSettings = async function() {
+            const rateInput = document.getElementById('hourlyRate');
+            const newRate = parseFloat(rateInput.value);
+
+            if (isNaN(newRate) || newRate <= 0) {
+                showMessage('Bitte geben Sie einen gültigen Stundenlohn ein.');
+                return;
+            }
+            window.hourlyRate = newRate;
+
+            if (isFirebaseReady) {
+                await saveSettingsFirebase(newRate);
+            } else {
+                saveSettingsLocal(newRate);
+            }
+            filterEntries(); // Neuberechnung der Übersicht auslösen
+        }
+
+        window.addTimeEntry = async function() {
+            const dateStr = document.getElementById('dateInput').value;
+            const startTimeStr = document.getElementById('startTimeInput').value;
+            const endTimeStr = document.getElementById('endTimeInput').value;
+
+            if (!dateStr || !startTimeStr || !endTimeStr) {
+                showMessage('Bitte füllen Sie alle Felder aus (Datum, Startzeit, Endzeit).');
+                return;
+            }
+
+            const startDateTime = new Date(`${dateStr}T${startTimeStr}:00`);
+            const endDateTime = new Date(`${dateStr}T${endTimeStr}:00`);
+
+            if (endDateTime <= startDateTime) {
+                showMessage('Die Endzeit muss nach der Startzeit liegen. Überprüfen Sie Ihre Eingaben.');
+                return;
+            }
+
+            const durationMs = endDateTime.getTime() - startDateTime.getTime();
+
+            if (durationMs > 24 * 60 * 60 * 1000) {
+                 showMessage('Die Dauer darf 24 Stunden nicht überschreiten.');
+                return;
+            }
+
+            const newEntry = {
+                date: dateStr, 
+                startTime: startDateTime,
+                endTime: endDateTime,
+                durationMs: durationMs,
+            };
+
+            let success = false;
+            if (isFirebaseReady) {
+                success = await addTimeEntryFirebase(newEntry);
+            } else {
+                success = addTimeEntryLocal(newEntry);
+            }
+
+            if (success) {
+                // Formular zurücksetzen
+                document.getElementById('startTimeInput').value = '';
+                document.getElementById('endTimeInput').value = '';
+                document.getElementById('dateInput').valueAsDate = new Date(); 
+            }
+        }
+        
+        window.deleteEntry = async function(id) {
+            const confirmed = await showConfirm('Sind Sie sicher, dass Sie diesen Eintrag löschen möchten?');
+            if (!confirmed) {
+                return;
+            }
+
+            if (isFirebaseReady) {
+                await deleteEntryFirebase(id);
+            } else {
+                deleteEntryLocal(id);
+            }
+            // filterEntries wird durch den onSnapshot (Firebase) oder saveEntriesLocal (Local) aufgerufen
+        }
+
+
+        // --- UI Rendering & Logic ---
+
+        function populateMonthYearSelectors() {
+            const now = new Date();
+            const currentMonth = now.getMonth() + 1; // 1-basiert
+            const currentYear = now.getFullYear();
+            
+            const monthNames = [
+                'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+                'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
+            ];
+            
+            const monthSelect = document.getElementById('monthSelect');
+            const yearSelect = document.getElementById('yearSelect');
+            
+            // Monate
+            monthSelect.innerHTML = '';
+            monthNames.forEach((name, index) => {
+                const month = index + 1;
+                const option = new Option(name, month.toString().padStart(2, '0'));
+                monthSelect.add(option);
+            });
+            
+            // Jahre
+            const years = new Set([currentYear]);
+            window.allEntries.forEach(entry => years.add(new Date(entry.date).getFullYear()));
+            
+            yearSelect.innerHTML = '';
+            Array.from(years).sort((a, b) => b - a).forEach(year => {
+                const option = new Option(year, year);
+                yearSelect.add(option);
+            });
+            
+            // Selektion auf aktuellen Monat/Jahr setzen
+            monthSelect.value = currentMonth.toString().padStart(2, '0');
+            yearSelect.value = currentYear.toString();
+        }
+
+        window.filterEntries = function() {
+            const selectedMonth = document.getElementById('monthSelect').value;
+            const selectedYear = document.getElementById('yearSelect').value;
+            const entryList = document.getElementById('timeEntryList');
+            
+            let monthlyTotalMs = 0;
+            
+            const filteredEntries = window.allEntries.filter(entry => {
+                const entryDate = new Date(entry.date);
+                const entryMonth = (entryDate.getMonth() + 1).toString().padStart(2, '0');
+                const entryYear = entryDate.getFullYear().toString();
+                return entryMonth === selectedMonth && entryYear === selectedYear;
+            });
+            
+            entryList.innerHTML = '';
+            
+            if (filteredEntries.length === 0) {
+                entryList.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-gray-500">Keine Einträge für diesen Monat.</td></tr>';
+            } else {
+                filteredEntries.forEach(entry => {
+                    const decimalHours = msToDecimalHours(entry.durationMs);
+                    const hmmTime = msToHMM(entry.durationMs);
+                    const formattedDate = new Date(entry.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                    
+                    monthlyTotalMs += entry.durationMs;
+                    
+                    const startHMM = entry.startTime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                    const endHMM = entry.endTime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+
+                    const row = document.createElement('tr');
+                    row.className = 'border-b border-gray-200';
+                    row.innerHTML = `
+                        <td>${formattedDate}</td>
+                        <td>${startHMM}</td>
+                        <td>${endHMM}</td>
+                        <td>${hmmTime}</td>
+                        <td>${decimalHours.toFixed(2)}</td>
+                        <td>
+                            <button onclick="deleteEntry('${entry.id}')" class="text-red-500 hover:text-red-700 p-1 rounded transition duration-150">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 6h6v8H7V6z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </td>
+                    `;
+                    entryList.appendChild(row);
+                });
+            }
+
+            const monthlyTotalDecimalHours = msToDecimalHours(monthlyTotalMs);
+            const totalEarnings = monthlyTotalDecimalHours * window.hourlyRate;
+            
+            document.getElementById('monthlyTotalHours').textContent = monthlyTotalDecimalHours.toFixed(2);
+            document.getElementById('monthlyTotalEarnings').textContent = totalEarnings.toFixed(2).replace('.', ',');
+        }
+
+        // --- Initialization on Load ---
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('dateInput').valueAsDate = new Date();
+            initializeFirebase();
+        });
+
+    </script>
+</body>
+</html>
