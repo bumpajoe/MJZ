@@ -203,7 +203,7 @@
         let hourlyRate = 20.00; 
         let minijobLimit = 538.00; // Standardwert für Minijob-Obergrenze (538 € ab 2024)
         let currentLang = 'de';
-        let themeAppearance = 'maskulin'; 
+        let themeAppearance = 'dark'; 
 
         const ENTRIES_STORAGE_KEY = 'zeitrechner_entries';
         const RATE_STORAGE_KEY = 'zeitrechner_hourly_rate'; 
@@ -214,7 +214,11 @@
         // --- Mehrsprachigkeit / Translations ---
         const translations = {
             de: {
-                appTitle: "Time2Chucks", settingsTitle: "Einstellungen & Export", rateSectionTitle: "Stundenlohn & Minijob-Obergrenze festlegen", rateLabel: "Stundenlohn (€)", minijobLimitLabel: "Minijob Obergrenze (€)", saveBtn: "Speichern", exportTitle: "Daten-Export (CSV)", exportBtn: "Alle Einträge als CSV herunterladen", importTitle: "Daten-Import (CSV)", importCSVBtn: "CSV-Datei importieren", msgImportSuccess: (count) => `${count} Einträge erfolgreich importiert.`, msgImportError: "Fehler beim Importieren der CSV-Datei. Überprüfen Sie das Format (Trennzeichen: ';').", newEntryTitle: "Neue Arbeitszeit erfassen", dateLabel: "Datum (Starttag)", startTimeLabel: "Startzeit", endTimeLabel: "Endzeit (kann am nächsten Tag liegen)", saveEntryBtn: "Zeiteintrag speichern", summaryTitle: "Monatsübersicht & Archiv", totalTime: "Gesamtzeit diesen Monat:", totalEarnings: "Errechneter Lohn:", hoursUnit: "Stunden", currencyUnit: "€", tableDate: "Datum", tableStart: "Start", tableEnd: "Ende", tableDurationHMM: "Dauer (H:MM)", tableDurationDecimal: "Dauer (Dezimal)", tableDelete: "Löschen", noEntries: "Keine Einträge für diesen Monat.", loading: "Lade lokale Daten...",
+                appTitle: "Time2Chucks", 
+                settingsTitle: "Einstellungen & Export", rateSectionTitle: "Stundenlohn & Minijob-Obergrenze festlegen", rateLabel: "Stundenlohn (€)", minijobLimitLabel: "Minijob Obergrenze (€)", saveBtn: "Speichern", exportTitle: "Daten-Export (CSV)", exportBtn: "Alle Einträge als CSV herunterladen", importTitle: "Daten-Import (CSV)", importCSVBtn: "CSV-Datei importieren", msgImportSuccess: (count) => `${count} Einträge erfolgreich importiert.`, msgImportError: "Fehler beim Importieren der CSV-Datei. Überprüfen Sie das Format (Trennzeichen: ';').", newEntryTitle: "Neue Arbeitszeit erfassen", dateLabel: "Datum (Starttag)", startTimeLabel: "Startzeit", endTimeLabel: "Endzeit (kann am nächsten Tag liegen)", saveEntryBtn: "Zeiteintrag speichern", summaryTitle: "Monatsübersicht & Archiv", 
+                totalTime: "Gesamtzeit diesen Monat:", 
+                totalEarnings: "Errechnetes Gehalt:", // GEÄNDERT: Lohn -> Gehalt
+                hoursUnit: "Stunden", currencyUnit: "€", tableDate: "Datum", tableStart: "Start", tableEnd: "Ende", tableDurationHMM: "Dauer (H:MM)", tableDurationDecimal: "Dauer (Dezimal)", tableDelete: "Löschen", noEntries: "Keine Einträge für diesen Monat.", loading: "Lade lokale Daten...",
                 msgInvalidRate: "Bitte geben Sie einen gültigen Stundenlohn ein.",
                 msgInvalidMinijob: "Bitte geben Sie einen gültigen Minijob-Betrag ein (z.B. 538,00).",
                 msgRateSaved: (rate) => `Einstellungen (Stundenlohn auf ${rate.replace('.', ',')} €) gespeichert.`,
@@ -233,11 +237,15 @@
                 resetConfirmMessage: "Sind Sie sicher, dass Sie ALLE gespeicherten Zeiteinträge und Einstellungen unwiderruflich löschen möchten? Dieser Schritt kann nicht rückgängig gemacht werden.",
                 resetSuccess: "Alle Daten wurden erfolgreich gelöscht. Die App wurde zurückgesetzt.",
                 minijobExceededWarning: "ACHTUNG: Minijob-Obergrenze ({{limit}} €) erreicht!", 
-                overtimeHoursLabel: "Davon Überstunden:",
+                overtimeHoursLabel: "Überstunden (nicht entlohnt):", // GEÄNDERT: Klarere Bezeichnung
                 languageOptions: { de: "Deutsch", en: "Englisch", ph: "Filipino (Tagalog)" },
             },
             en: {
-                appTitle: "Time2Chucks", settingsTitle: "Settings & Export", rateSectionTitle: "Set Hourly Rate & Minijob Limit", rateLabel: "Hourly Rate (€)", minijobLimitLabel: "Minijob Limit (€)", saveBtn: "Save", exportTitle: "Data Export (CSV)", exportBtn: "Download All Entries as CSV", importTitle: "Data Import (CSV)", importCSVBtn: "Import CSV File", msgImportSuccess: (count) => `${count} entries imported successfully.`, msgImportError: "Error importing CSV file. Check the format (Separator: ';').", newEntryTitle: "Record New Work Time", dateLabel: "Date (Start Day)", startTimeLabel: "Start Time", endTimeLabel: "End Time (can be next day)", saveEntryBtn: "Save Time Entry", summaryTitle: "Monthly Overview & Archive", totalTime: "Total Time this Month:", totalEarnings: "Calculated Earnings:", hoursUnit: "Hours", currencyUnit: "€", tableDate: "Date", tableStart: "Start", tableEnd: "End", tableDurationHMM: "Duration (H:MM)", tableDurationDecimal: "Duration (Decimal)", tableDelete: "Delete", noEntries: "No entries for this month.", loading: "Loading local data...",
+                appTitle: "Time2Chucks", 
+                settingsTitle: "Settings & Export", rateSectionTitle: "Set Hourly Rate & Minijob Limit", rateLabel: "Hourly Rate (€)", minijobLimitLabel: "Minijob Limit (€)", saveBtn: "Save", exportTitle: "Data Export (CSV)", exportBtn: "Download All Entries as CSV", importTitle: "Data Import (CSV)", importCSVBtn: "Import CSV File", msgImportSuccess: (count) => `${count} entries imported successfully.`, msgImportError: "Error importing CSV file. Check the format (Separator: ';').", newEntryTitle: "Record New Work Time", dateLabel: "Date (Start Day)", startTimeLabel: "Start Time", endTimeLabel: "End Time (can be next day)", saveEntryBtn: "Save Time Entry", summaryTitle: "Monthly Overview & Archive", 
+                totalTime: "Total Time this Month:", 
+                totalEarnings: "Calculated Pay:", // GEÄNDERT: Earnings -> Pay
+                hoursUnit: "Hours", currencyUnit: "€", tableDate: "Date", tableStart: "Start", tableEnd: "End", tableDurationHMM: "Duration (H:MM)", tableDurationDecimal: "Duration (Decimal)", tableDelete: "Delete", noEntries: "No entries for this month.", loading: "Loading local data...",
                 msgInvalidRate: "Please enter a valid hourly rate.",
                 msgInvalidMinijob: "Please enter a valid Minijob amount (e.g., 538.00).",
                 msgRateSaved: (rate) => `Settings (Hourly rate set to €${rate}) saved.`,
@@ -255,11 +263,15 @@
                 resetConfirmMessage: "Are you sure you want to permanently delete ALL saved time entries and settings? This step cannot be undone.",
                 resetSuccess: "All data has been successfully deleted. The app has been reset.",
                 minijobExceededWarning: "WARNING: Minijob Limit ({{limit}} €) reached!",
-                overtimeHoursLabel: "Overtime Hours:",
+                overtimeHoursLabel: "Overtime Hours (unpaid):", // GEÄNDERT: Klarere Bezeichnung
                 languageOptions: { de: "German", en: "English", ph: "Filipino (Tagalog)" },
             },
             ph: {
-                appTitle: "Time2Chucks", settingsTitle: "Mga Setting at Export", rateSectionTitle: "Itakda ang Orasang Rate at Minijob Limit", rateLabel: "Orasang Rate (€)", minijobLimitLabel: "Minijob Limit (€)", saveBtn: "I-save", exportTitle: "Export ng Data (CSV)", exportBtn: "I-download ang Lahat ng Entries bilang CSV", importTitle: "Import ng Data (CSV)", importCSVBtn: "I-import ang CSV File", msgImportSuccess: (count) => `${count} entries matagumpay na na-import.`, msgImportError: "Mali sa pag-import ng CSV file. Suriin ang format (Separator: ';').", newEntryTitle: "Itala ang Bagong Oras ng Trabaho", dateLabel: "Petsa (Simulang Araw)", startTimeLabel: "Simulang Oras", endTimeLabel: "Katapusang Oras (maaaring kinabukasan)", saveEntryBtn: "I-save ang Entry ng Oras", summaryTitle: "Buwanang Pangkalahatang-ideya at Archive", totalTime: "Kabuuang Oras ngayong Buwan:", totalEarnings: "Kinakalkulang Kita:", hoursUnit: "Oras", currencyUnit: "€", tableDate: "Petsa", tableStart: "Simula", tableEnd: "Pagtatapos", tableDurationHMM: "Tagal (H:MM)", tableDurationDecimal: "Tagal (Decimal)", tableDelete: "Tanggalin", noEntries: "Walang entries para sa buwang ito.", loading: "Naglo-load ng lokal na data...",
+                appTitle: "Time2Chucks", 
+                settingsTitle: "Mga Setting at Export", rateSectionTitle: "Itakda ang Orasang Rate at Minijob Limit", rateLabel: "Orasang Rate (€)", minijobLimitLabel: "Minijob Limit (€)", saveBtn: "I-save", exportTitle: "Export ng Data (CSV)", exportBtn: "I-download ang Lahat ng Entries bilang CSV", importTitle: "Import ng Data (CSV)", importCSVBtn: "I-import ang CSV File", msgImportSuccess: (count) => `${count} entries matagumpay na na-import.`, msgImportError: "Mali sa pag-import ng CSV file. Suriin ang format (Separator: ';').", newEntryTitle: "Itala ang Bagong Oras ng Trabaho", dateLabel: "Petsa (Simulang Araw)", startTimeLabel: "Simulang Oras", endTimeLabel: "Katapusang Oras (maaaring kinabukasan)", saveEntryBtn: "I-save ang Entry ng Oras", summaryTitle: "Buwanang Pangkalahatang-ideya at Archive", 
+                totalTime: "Kabuuang Oras ngayong Buwan:", 
+                totalEarnings: "Kinakalkulang Suweldo:", // GEÄNDERT: Kita -> Suweldo
+                hoursUnit: "Oras", currencyUnit: "€", tableDate: "Petsa", tableStart: "Simula", tableEnd: "Pagtatapos", tableDurationHMM: "Tagal (H:MM)", tableDurationDecimal: "Tagal (Decimal)", tableDelete: "Tanggalin", noEntries: "Walang entries para sa buwang ito.", loading: "Naglo-load ng lokal na data...",
                 msgInvalidRate: "Pakilagay ang wastong orasang rate.",
                 msgInvalidMinijob: "Pakilagay ang wastong Minijob na halaga (hal., 538.00).",
                 msgRateSaved: (rate) => `Na-save ang mga Setting (Orasang rate set sa €${rate}).`,
@@ -277,7 +289,7 @@
                 resetConfirmMessage: "Sigurado ka bang gusto mong permanenteng tanggalin ang LAHAT ng naka-save na entries ng oras at settings? Hindi ito mababawi.",
                 resetSuccess: "Matagumpay na natanggal ang lahat ng data. Na-reset ang app.",
                 minijobExceededWarning: "BABALA: Minijob Limit ({{limit}} €) naabot!",
-                overtimeHoursLabel: "Mga Overtime na Oras:",
+                overtimeHoursLabel: "Overtime na Oras (di-bayad):", // GEÄNDERT: Klarere Bezeichnung
                 languageOptions: { de: "Aleman (German)", en: "Ingles (English)", ph: "Filipino (Tagalog)" },
             }
         };
@@ -293,7 +305,8 @@
             }
 
             // Lade Theme
-            const storedTheme = localStorage.getItem(THEME_STORAGE_KEY); 
+            const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+            // Wenn ein Theme gespeichert ist, verwende es. Andernfalls bleibt der Default ('dark') erhalten.
             if (storedTheme && ['maskulin', 'feminin', 'dark'].includes(storedTheme)) {
                 themeAppearance = storedTheme;
             }
@@ -322,6 +335,7 @@
                     endTime: new Date(entry.endTime),
                     rate: entry.rate || hourlyRate 
                 }));
+                // Standardmäßig umgekehrt chronologisch sortieren (für die Anzeige)
                 allEntries.sort((a, b) => new Date(b.date) - new Date(a.date));
             }
 
@@ -527,7 +541,7 @@
                 hourlyRate = 20.00;
                 minijobLimit = 538.00;
                 currentLang = 'de';
-                themeAppearance = 'maskulin';
+                themeAppearance = 'dark'; // Setze Default-Theme zurück
 
                 // UI neu laden und Zustand anzeigen
                 loadFromLocalStorage(); 
@@ -590,6 +604,8 @@
             };
 
             allEntries.unshift(newEntry); 
+            // Wichtig: Neu sortieren nach dem Hinzufügen (umgekehrt chronologisch für die Anzeige)
+            allEntries.sort((a, b) => new Date(b.date) - new Date(a.date));
             saveToLocalStorage();
             
             // Eingabezeiten zurücksetzen
@@ -924,16 +940,64 @@
             const entryList = document.getElementById('timeEntryList');
             const t = translations[currentLang];
             
-            let monthlyTotalMs = 0;
-            let monthlyTotalEarnings = 0; 
-            
-            const filteredEntries = allEntries.filter(entry => {
+            // 1. Einträge filtern
+            let filteredEntries = allEntries.filter(entry => {
                 const entryDate = new Date(entry.date);
                 const entryMonth = (entryDate.getMonth() + 1).toString().padStart(2, '0');
                 const entryYear = entryDate.getFullYear().toString();
                 return entryMonth === selectedMonth && entryYear === selectedYear;
             });
             
+            // --- 2. Berechnung Block (Muss chronologisch erfolgen) ---
+            // Erstelle eine chronologische Kopie für die Berechnung (wichtig für die Minijob-Grenze)
+            const chronologicalEntries = [...filteredEntries].sort((a, b) => {
+                // Erstelle Datum-Zeit-Objekte für den Start (für präzise chronologische Sortierung)
+                const startA = new Date(a.date + 'T' + a.startTime.toTimeString().slice(0, 5));
+                const startB = new Date(b.date + 'T' + b.startTime.toTimeString().slice(0, 5));
+                return startA.getTime() - startB.getTime();
+            });
+
+            let monthlyTotalMs = 0; // Gesamtzeit in Millisekunden
+            let monthlyTotalEarnings = 0; // Gehalt (auf Minijob-Limit begrenzt)
+            let overtimeHours = 0; // Überstunden (Stunden über dem Limit)
+            const currentMinijobLimit = minijobLimit;
+
+            // Totals chronologisch berechnen
+            chronologicalEntries.forEach(entry => {
+                const decimalHours = msToDecimalHours(entry.durationMs);
+                const entryRate = entry.rate || hourlyRate; 
+                const potentialEarnings = decimalHours * entryRate;
+                
+                // Tracke die gesamte physisch gearbeitete Zeit (ungekappt)
+                monthlyTotalMs += entry.durationMs; 
+
+                // Prüfe, ob das Limit noch nicht erreicht ist
+                if (monthlyTotalEarnings < currentMinijobLimit) {
+                    const remainingLimit = currentMinijobLimit - monthlyTotalEarnings;
+                    
+                    if (potentialEarnings <= remainingLimit) {
+                        // Der gesamte Eintrag trägt zum Gehalt bei
+                        monthlyTotalEarnings += potentialEarnings;
+                    } else {
+                        // Der Eintrag überschreitet das Limit und generiert Überstunden
+                        
+                        // 1. Gehalt bis zum Limit hinzufügen (Kappung)
+                        monthlyTotalEarnings = currentMinijobLimit; 
+                        
+                        // 2. Stunden berechnen, die zum Erreichen des Limits benötigt wurden
+                        const hoursToLimit = remainingLimit / entryRate;
+                        
+                        // 3. Überstunden (alles, was über die Limit-Stunden hinausgeht)
+                        const hoursOverLimit = decimalHours - hoursToLimit;
+                        overtimeHours += hoursOverLimit;
+                    }
+                } else {
+                    // Limit war bereits erreicht. Alle Stunden sind Überstunden.
+                    overtimeHours += decimalHours;
+                }
+            });
+            
+            // --- 3. Tabellen-Rendering (Verwendet filteredEntries, die umgekehrt chronologisch sind) ---
             entryList.innerHTML = '';
             
             if (filteredEntries.length === 0) {
@@ -944,10 +1008,6 @@
                     const hmmTime = msToHMM(entry.durationMs);
                     // Anzeigeformat basierend auf der Sprache
                     const formattedDate = new Date(entry.date).toLocaleDateString(currentLang, { day: '2-digit', month: '2-digit', year: 'numeric' });
-                    
-                    const entryRate = entry.rate || hourlyRate; 
-                    monthlyTotalMs += entry.durationMs;
-                    monthlyTotalEarnings += decimalHours * entryRate; 
                     
                     const startHMM = entry.startTime.toLocaleTimeString(currentLang, { hour: '2-digit', minute: '2-digit' });
                     const endHMM = entry.endTime.toLocaleTimeString(currentLang, { hour: '2-digit', minute: '2-digit' });
@@ -973,21 +1033,16 @@
             }
 
             const monthlyTotalDecimalHours = msToDecimalHours(monthlyTotalMs);
-            const currentMinijobLimit = minijobLimit; 
-            const isMinijobExceeded = monthlyTotalEarnings > currentMinijobLimit && monthlyTotalEarnings > 0;
-            let overtimeHours = 0;
+            // Überprüfe, ob das Gehalt tatsächlich gekappt wurde (Monatliche Gesamteinnahmen RUNDEN)
+            const actualEarningsDisplay = parseFloat(monthlyTotalEarnings.toFixed(2));
+            
+            const isMinijobExceeded = actualEarningsDisplay >= currentMinijobLimit && monthlyTotalDecimalHours > 0;
+            
             let overtimeWarningHTML = '';
             const summaryBox = document.getElementById('summaryBox'); 
 
-            if (isMinijobExceeded && hourlyRate > 0) {
-                // Berechne die erforderlichen Stunden, um das Limit zu erreichen
-                const requiredHours = currentMinijobLimit / hourlyRate; 
-                
-                // Berechne die Überstunden (Stunden über den erforderlichen)
-                // Stellen Sie sicher, dass overtimeHours nicht negativ wird, falls Rundungsfehler auftreten
-                overtimeHours = Math.max(0, monthlyTotalDecimalHours - requiredHours);
-                
-                // Füge die Warnung und die Überstunden-Anzeige hinzu
+            // Füge die Warnung und Überstunden-Anzeige hinzu, WENN Überstunden vorhanden sind
+            if (overtimeHours > 0.01 && hourlyRate > 0) { // Überstunden nur anzeigen, wenn > 0.01
                 let warningText = t.minijobExceededWarning.replace('{{limit}}', formatNumber(currentMinijobLimit));
 
                 overtimeWarningHTML = `
@@ -1006,7 +1061,7 @@
                 ${overtimeWarningHTML} 
                 <div class="summary-box border-l-4 p-4 rounded-lg">
                     <p class="text-sm font-medium summary-text"><span id="summaryTotalTimeText">${t.totalTime}</span> <span class="font-bold">${formatNumber(monthlyTotalDecimalHours)}</span> ${t.hoursUnit}</p>
-                    <p class="text-sm font-medium summary-text"><span id="summaryTotalEarningsText">${t.totalEarnings}</span> <span class="font-bold">${formatNumber(monthlyTotalEarnings)}</span> ${t.currencyUnit}</p>
+                    <p class="text-sm font-medium summary-text"><span id="summaryTotalEarningsText">${t.totalEarnings}</span> <span class="font-bold">${formatNumber(actualEarningsDisplay)}</span> ${t.currencyUnit}</p>
                 </div>
             `;
         }
@@ -1047,7 +1102,7 @@
                 </div>
                 
                 <!-- Erscheinungsbild Sektion -->
-                <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 pt-4 border-t border-gray-200 dark:border-gray-600" id="themeLabel">Erscheinungsbild</h3>
+                <h3 class="text-lg font-medium pt-4 border-t border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300" id="themeLabel">Erscheinungsbild</h3>
                 <div class="flex">
                     <select id="themeAppearanceSelect" onchange="setThemeAppearance(this.value)" class="w-full border rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500"></select>
                 </div>
@@ -1158,11 +1213,11 @@
                 <select id="yearSelect" onchange="filterEntries()" class="w-32 border rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500"></select>
             </div>
 
-            <!-- Summary Box Container (wird durch JS befüllt, inkl. Minijob-Warnung) -->
+            <!-- Summary Box Container (wird durch JS befüllt, inkl. Minijob-Warnung und Überstunden) -->
             <div id="summaryBox" class="mb-4">
                 <div class="summary-box border-l-4 p-4 rounded-lg">
                     <p class="text-sm font-medium summary-text">Gesamtzeit diesen Monat: <span class="font-bold">0,00</span> Stunden</p>
-                    <p class="text-sm font-medium summary-text">Errechneter Lohn: <span class="font-bold">0,00</span> €</p>
+                    <p class="text-sm font-medium summary-text">Errechnetes Gehalt: <span class="font-bold">0,00</span> €</p>
                 </div>
             </div>
 
