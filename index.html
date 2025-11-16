@@ -8,8 +8,13 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
         
-        /* Default (Masculine) Theme Variables */
+        /* --- Light Mode CSS Variables (Basis für Maskulin/Feminin) --- */
         :root {
+            --bg-primary: #f7f9fc; 
+            --text-base: #1f2937;
+            --card-bg: white;
+            --input-bg: white;
+            --input-border: #d1d5db;
             --color-primary: #3b82f6; /* Blue 500 */
             --color-primary-dark: #2563eb; /* Blue 600 */
             --color-title: #1d4ed8; /* Blue 700 */
@@ -18,10 +23,27 @@
             --color-text-summary: #1d4ed8;
         }
 
+        /* --- Dark Mode Overrides (wird durch JS auf das Body-Tag angewendet) --- */
+        .dark-mode {
+            --bg-primary: #1f2937; /* Dark Gray */
+            --text-base: #f3f4f6; /* Light Text */
+            --card-bg: #374151; /* Dark Card */
+            --input-bg: #4b5563;
+            --input-border: #4b5563;
+            --color-primary: #60a5fa; /* Blue 400 */
+            --color-primary-dark: #3b82f6; /* Blue 500 */
+            --color-title: #93c5fd; /* Light Blue */
+            --color-summary-bg: #4b5563;
+            --color-summary-border: #60a5fa;
+            --color-text-summary: #93c5fd;
+        }
+
+        /* --- Theme-Unabhängige Basis-Styles --- */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f7f9fc;
-            color: #1f2937;
+            background-color: var(--bg-primary);
+            color: var(--text-base);
+            transition: background-color 0.3s, color 0.3s;
         }
         .container {
             max-width: 95%;
@@ -29,12 +51,46 @@
             padding: 1rem;
         }
         .card {
-            background-color: white;
+            background-color: var(--card-bg);
             border-radius: 12px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
             padding: 1.5rem;
             margin-bottom: 1.5rem;
+            transition: background-color 0.3s, color 0.3s;
         }
+        
+        /* Input & Select Styling */
+        input[type="date"], input[type="time"], input[type="number"], select {
+            background-color: var(--input-bg);
+            border-color: var(--input-border);
+            color: var(--text-base);
+        }
+
+        /* Themed Elements */
+        .app-title {
+            color: var(--color-title);
+        }
+        .summary-box {
+            background-color: var(--color-summary-bg);
+            border-left-color: var(--color-summary-border);
+        }
+        .summary-text {
+            color: var(--color-text-summary);
+        }
+        .summary-table th {
+            background-color: var(--color-summary-bg);
+            color: var(--color-text-summary);
+            border-bottom: 2px solid var(--color-summary-border);
+        }
+        .summary-table tr:nth-child(even) {
+            background-color: var(--card-bg); 
+        }
+        .dark-mode .summary-table tr:nth-child(even) {
+             background-color: #374151;
+        }
+
+
+        /* --- Button Styling --- */
         .btn-primary {
             background-color: var(--color-primary);
             color: white;
@@ -68,56 +124,36 @@
         .btn-secondary:hover {
             background-color: #e5e7eb;
         }
+        .dark-mode .btn-secondary {
+            background-color: #4b5563;
+            color: #f3f4f6;
+        }
+        .dark-mode .btn-secondary:hover {
+            background-color: #6b7280;
+        }
         
-        /* Themed Elements */
-        .app-title {
-            color: var(--color-title);
-        }
-        .summary-box {
-            background-color: var(--color-summary-bg);
-            border-left-color: var(--color-summary-border);
-        }
-        .summary-text {
-            color: var(--color-text-summary);
-        }
-        .summary-table th {
-            background-color: var(--color-summary-bg);
-            color: var(--color-text-summary);
-            border-bottom: 2px solid var(--color-summary-border);
-        }
-
-        /* Custom Table Styling */
-        .summary-table th, .summary-table td {
-            padding: 0.5rem 0.5rem;
-            text-align: left;
-            font-size: 0.875rem; /* Small font size for mobile */
-        }
-        .summary-table tr:nth-child(even) {
-            background-color: #f9fafb;
-        }
-        .summary-table tr:last-child td {
-            border-bottom: none;
-        }
-        /* Modal Backdrop */
+        /* --- Modal Styling --- */
         .modal-backdrop {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
+            background-color: rgba(0, 0, 0, 0.7);
             display: none;
             justify-content: center;
             align-items: center;
             z-index: 1000;
         }
         .modal-content {
-            background: white;
+            background: var(--card-bg);
+            color: var(--text-base);
             padding: 1.5rem;
             border-radius: 12px;
             width: 90%;
             max-width: 400px;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+            transition: background-color 0.3s, color 0.3s;
         }
     </style>
 
@@ -125,20 +161,23 @@
         // --- Globale Variablen und Konstanten ---
         let allEntries = [];
         let hourlyRate = 20.00; 
+        let minijobLimit = 538.00; // Standardwert für Minijob-Obergrenze (538 € ab 2024)
         let currentLang = 'de';
-        let genderAppearance = 'maskulin'; // Neu: 'maskulin' oder 'feminin'
+        let themeAppearance = 'maskulin'; 
 
         const ENTRIES_STORAGE_KEY = 'zeitrechner_entries';
         const RATE_STORAGE_KEY = 'zeitrechner_hourly_rate'; 
+        const MINIJOB_STORAGE_KEY = 'zeitrechner_minijob_limit';
         const LANG_STORAGE_KEY = 'zeitrechner_language';
-        const GENDER_STORAGE_KEY = 'zeitrechner_gender_appearance'; // Neu
+        const THEME_STORAGE_KEY = 'zeitrechner_theme_appearance'; 
 
         // --- Mehrsprachigkeit / Translations ---
         const translations = {
             de: {
-                appTitle: "Time2Chucks", settingsTitle: "Einstellungen & Export", rateSectionTitle: "Aktuellen Stundenlohn festlegen (für neue Einträge)", rateLabel: "Stundenlohn (€)", saveBtn: "Speichern", exportTitle: "Daten-Export (CSV)", exportBtn: "Alle Einträge als CSV herunterladen", newEntryTitle: "Neue Arbeitszeit erfassen", dateLabel: "Datum (Starttag)", startTimeLabel: "Startzeit", endTimeLabel: "Endzeit (kann am nächsten Tag liegen)", saveEntryBtn: "Zeiteintrag speichern", summaryTitle: "Monatsübersicht & Archiv", totalTime: "Gesamtzeit diesen Monat:", totalEarnings: "Errechneter Lohn:", hoursUnit: "Stunden", currencyUnit: "€", tableDate: "Datum", tableStart: "Start", tableEnd: "Ende", tableDurationHMM: "Dauer (H:MM)", tableDurationDecimal: "Dauer (Dezimal)", tableDelete: "Löschen", noEntries: "Keine Einträge für diesen Monat.", loading: "Lade lokale Daten...",
+                appTitle: "Time2Chucks", settingsTitle: "Einstellungen & Export", rateSectionTitle: "Stundenlohn & Minijob-Obergrenze festlegen", rateLabel: "Stundenlohn (€)", minijobLimitLabel: "Minijob Obergrenze (€)", saveBtn: "Speichern", exportTitle: "Daten-Export (CSV)", exportBtn: "Alle Einträge als CSV herunterladen", importTitle: "Daten-Import (CSV)", importCSVBtn: "CSV-Datei importieren", msgImportSuccess: (count) => `${count} Einträge erfolgreich importiert.`, msgImportError: "Fehler beim Importieren der CSV-Datei. Überprüfen Sie das Format (Trennzeichen: ';').", newEntryTitle: "Neue Arbeitszeit erfassen", dateLabel: "Datum (Starttag)", startTimeLabel: "Startzeit", endTimeLabel: "Endzeit (kann am nächsten Tag liegen)", saveEntryBtn: "Zeiteintrag speichern", summaryTitle: "Monatsübersicht & Archiv", totalTime: "Gesamtzeit diesen Monat:", totalEarnings: "Errechneter Lohn:", hoursUnit: "Stunden", currencyUnit: "€", tableDate: "Datum", tableStart: "Start", tableEnd: "Ende", tableDurationHMM: "Dauer (H:MM)", tableDurationDecimal: "Dauer (Dezimal)", tableDelete: "Löschen", noEntries: "Keine Einträge für diesen Monat.", loading: "Lade lokale Daten...",
                 msgInvalidRate: "Bitte geben Sie einen gültigen Stundenlohn ein.",
-                msgRateSaved: (rate) => `Neuer Standard-Stundenlohn auf ${rate.replace('.', ',')} € gespeichert.`,
+                msgInvalidMinijob: "Bitte geben Sie einen gültigen Minijob-Betrag ein (z.B. 538,00).",
+                msgRateSaved: (rate) => `Einstellungen (Stundenlohn auf ${rate.replace('.', ',')} €) gespeichert.`,
                 msgInvalidFields: "Bitte füllen Sie alle Felder aus (Datum, Startzeit, Endzeit).",
                 msgInvalidTime: "Die Dauer ist ungültig. Die Endzeit muss nach der Startzeit liegen und die gesamte Dauer darf 24 Stunden nicht überschreiten.",
                 msgDurationTooLong: "Fehler: Selbst unter Berücksichtigung der Nachtschicht dauert der Eintrag länger als 24 Stunden. Überprüfen Sie Ihre Eingaben.",
@@ -146,13 +185,22 @@
                 msgNoExportData: "Es sind keine Einträge vorhanden, die exportiert werden könnten.",
                 msgExported: (count, filename) => `Daten von ${count} Einträgen als "${filename}" heruntergeladen.`,
                 monthNames: ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
-                languageLabel: "Sprache", languageOptions: { de: "Deutsch", en: "Englisch", ph: "Filipino (Tagalog)" },
-                genderLabel: "Erscheinungsbild", genderOptions: { maskulin: "Maskulin (Blau)", feminin: "Feminin (Pink)" }
+                languageLabel: "Sprache", 
+                themeLabel: "Erscheinungsbild", 
+                themeOptions: { maskulin: "Maskulin (Blau)", feminin: "Feminin (Pink)", dark: "Dark Mode (Dunkel)" }, 
+                resetButton: "Alle Daten unwiderruflich löschen",
+                resetConfirmTitle: "ACHTUNG: Daten-Reset",
+                resetConfirmMessage: "Sind Sie sicher, dass Sie ALLE gespeicherten Zeiteinträge und Einstellungen unwiderruflich löschen möchten? Dieser Schritt kann nicht rückgängig gemacht werden.",
+                resetSuccess: "Alle Daten wurden erfolgreich gelöscht. Die App wurde zurückgesetzt.",
+                minijobExceededWarning: "ACHTUNG: Minijob-Obergrenze ({{limit}} €) erreicht!", 
+                overtimeHoursLabel: "Davon Überstunden:",
+                languageOptions: { de: "Deutsch", en: "Englisch", ph: "Filipino (Tagalog)" },
             },
             en: {
-                appTitle: "Time2Chucks", settingsTitle: "Settings & Export", rateSectionTitle: "Set Current Hourly Rate (for new entries)", rateLabel: "Hourly Rate (€)", saveBtn: "Save", exportTitle: "Data Export (CSV)", exportBtn: "Download All Entries as CSV", newEntryTitle: "Record New Work Time", dateLabel: "Date (Start Day)", startTimeLabel: "Start Time", endTimeLabel: "End Time (can be next day)", saveEntryBtn: "Save Time Entry", summaryTitle: "Monthly Overview & Archive", totalTime: "Total Time this Month:", totalEarnings: "Calculated Earnings:", hoursUnit: "Hours", currencyUnit: "€", tableDate: "Date", tableStart: "Start", tableEnd: "End", tableDurationHMM: "Duration (H:MM)", tableDurationDecimal: "Duration (Decimal)", tableDelete: "Delete", noEntries: "No entries for this month.", loading: "Loading local data...",
+                appTitle: "Time2Chucks", settingsTitle: "Settings & Export", rateSectionTitle: "Set Hourly Rate & Minijob Limit", rateLabel: "Hourly Rate (€)", minijobLimitLabel: "Minijob Limit (€)", saveBtn: "Save", exportTitle: "Data Export (CSV)", exportBtn: "Download All Entries as CSV", importTitle: "Data Import (CSV)", importCSVBtn: "Import CSV File", msgImportSuccess: (count) => `${count} entries imported successfully.`, msgImportError: "Error importing CSV file. Check the format (Separator: ';').", newEntryTitle: "Record New Work Time", dateLabel: "Date (Start Day)", startTimeLabel: "Start Time", endTimeLabel: "End Time (can be next day)", saveEntryBtn: "Save Time Entry", summaryTitle: "Monthly Overview & Archive", totalTime: "Total Time this Month:", totalEarnings: "Calculated Earnings:", hoursUnit: "Hours", currencyUnit: "€", tableDate: "Date", tableStart: "Start", tableEnd: "End", tableDurationHMM: "Duration (H:MM)", tableDurationDecimal: "Duration (Decimal)", tableDelete: "Delete", noEntries: "No entries for this month.", loading: "Loading local data...",
                 msgInvalidRate: "Please enter a valid hourly rate.",
-                msgRateSaved: (rate) => `New default hourly rate saved at €${rate}.`,
+                msgInvalidMinijob: "Please enter a valid Minijob amount (e.g., 538.00).",
+                msgRateSaved: (rate) => `Settings (Hourly rate set to €${rate}) saved.`,
                 msgInvalidFields: "Please fill in all fields (Date, Start Time, End Time).",
                 msgInvalidTime: "The duration is invalid. End time must be after start time and total duration cannot exceed 24 hours.",
                 msgDurationTooLong: "Error: Even considering an overnight shift, the duration exceeds 24 hours. Check your inputs.",
@@ -160,13 +208,21 @@
                 msgNoExportData: "There are no entries available for export.",
                 msgExported: (count, filename) => `Data from ${count} entries downloaded as "${filename}".`,
                 monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-                languageLabel: "Language", languageOptions: { de: "German", en: "English", ph: "Filipino (Tagalog)" },
-                genderLabel: "Appearance", genderOptions: { maskulin: "Masculine (Blue)", feminin: "Feminine (Pink)" }
+                languageLabel: "Language", 
+                themeLabel: "Appearance", themeOptions: { maskulin: "Masculine (Blue)", feminin: "Feminine (Pink)", dark: "Dark Mode (Dark)" },
+                resetButton: "Permanently Delete All Data",
+                resetConfirmTitle: "WARNING: Data Reset",
+                resetConfirmMessage: "Are you sure you want to permanently delete ALL saved time entries and settings? This step cannot be undone.",
+                resetSuccess: "All data has been successfully deleted. The app has been reset.",
+                minijobExceededWarning: "WARNING: Minijob Limit ({{limit}} €) reached!",
+                overtimeHoursLabel: "Overtime Hours:",
+                languageOptions: { de: "German", en: "English", ph: "Filipino (Tagalog)" },
             },
             ph: {
-                appTitle: "Time2Chucks", settingsTitle: "Mga Setting at Export", rateSectionTitle: "Itakda ang Kasalukuyang Orasang Rate (para sa mga bagong entry)", rateLabel: "Orasang Rate (€)", saveBtn: "I-save", exportTitle: "Export ng Data (CSV)", exportBtn: "I-download ang Lahat ng Entries bilang CSV", newEntryTitle: "Itala ang Bagong Oras ng Trabaho", dateLabel: "Petsa (Simulang Araw)", startTimeLabel: "Simulang Oras", endTimeLabel: "Katapusang Oras (maaaring kinabukasan)", saveEntryBtn: "I-save ang Entry ng Oras", summaryTitle: "Buwanang Pangkalahatang-ideya at Archive", totalTime: "Kabuuang Oras ngayong Buwan:", totalEarnings: "Kinakalkulang Kita:", hoursUnit: "Oras", currencyUnit: "€", tableDate: "Petsa", tableStart: "Simula", tableEnd: "Pagtatapos", tableDurationHMM: "Tagal (H:MM)", tableDurationDecimal: "Tagal (Decimal)", tableDelete: "Tanggalin", noEntries: "Walang entries para sa buwang ito.", loading: "Naglo-load ng lokal na data...",
+                appTitle: "Time2Chucks", settingsTitle: "Mga Setting at Export", rateSectionTitle: "Itakda ang Orasang Rate at Minijob Limit", rateLabel: "Orasang Rate (€)", minijobLimitLabel: "Minijob Limit (€)", saveBtn: "I-save", exportTitle: "Export ng Data (CSV)", exportBtn: "I-download ang Lahat ng Entries bilang CSV", importTitle: "Import ng Data (CSV)", importCSVBtn: "I-import ang CSV File", msgImportSuccess: (count) => `${count} entries matagumpay na na-import.`, msgImportError: "Mali sa pag-import ng CSV file. Suriin ang format (Separator: ';').", newEntryTitle: "Itala ang Bagong Oras ng Trabaho", dateLabel: "Petsa (Simulang Araw)", startTimeLabel: "Simulang Oras", endTimeLabel: "Katapusang Oras (maaaring kinabukasan)", saveEntryBtn: "I-save ang Entry ng Oras", summaryTitle: "Buwanang Pangkalahatang-ideya at Archive", totalTime: "Kabuuang Oras ngayong Buwan:", totalEarnings: "Kinakalkulang Kita:", hoursUnit: "Oras", currencyUnit: "€", tableDate: "Petsa", tableStart: "Simula", tableEnd: "Pagtatapos", tableDurationHMM: "Tagal (H:MM)", tableDurationDecimal: "Tagal (Decimal)", tableDelete: "Tanggalin", noEntries: "Walang entries para sa buwang ito.", loading: "Naglo-load ng lokal na data...",
                 msgInvalidRate: "Pakilagay ang wastong orasang rate.",
-                msgRateSaved: (rate) => `Ang bagong default na orasang rate ay na-save sa €${rate}.`,
+                msgInvalidMinijob: "Pakilagay ang wastong Minijob na halaga (hal., 538.00).",
+                msgRateSaved: (rate) => `Na-save ang mga Setting (Orasang rate set sa €${rate}).`,
                 msgInvalidFields: "Pakipunan ang lahat ng fields (Petsa, Simulang Oras, Katapusang Oras).",
                 msgInvalidTime: "Ang tagal ay hindi wasto. Ang katapusang oras ay dapat na mas huli kaysa sa simula at hindi dapat lumampas sa 24 oras ang kabuuang tagal.",
                 msgDurationTooLong: "Mali: Kahit isaalang-alang ang shift sa gabi, lumampas sa 24 oras ang tagal. Tingnan ang iyong mga input.",
@@ -174,8 +230,15 @@
                 msgNoExportData: "Walang available na entries para sa export.",
                 msgExported: (count, filename) => `Na-download ang data mula sa ${count} entries bilang "${filename}".`,
                 monthNames: ['Enero', 'Pebrero', 'Marso', 'Abril', 'Mayo', 'Hunyo', 'Hulyo', 'Agosto', 'Setyembre', 'Oktubre', 'Nobyembre', 'Disyembre'],
-                languageLabel: "Wika", languageOptions: { de: "Aleman (German)", en: "Ingles (English)", ph: "Filipino (Tagalog)" },
-                genderLabel: "Anyo", genderOptions: { maskulin: "Panlalaki (Asul)", feminin: "Pambabae (Pink)" }
+                languageLabel: "Wika", 
+                themeLabel: "Anyo", themeOptions: { maskulin: "Panlalaki (Asul)", feminin: "Pambabae (Pink)", dark: "Dark Mode (Madilim)" },
+                resetButton: "Permanenteng Tanggalin ang Lahat ng Data",
+                resetConfirmTitle: "BABALA: Pag-reset ng Data",
+                resetConfirmMessage: "Sigurado ka bang gusto mong permanenteng tanggalin ang LAHAT ng naka-save na entries ng oras at settings? Hindi ito mababawi.",
+                resetSuccess: "Matagumpay na natanggal ang lahat ng data. Na-reset ang app.",
+                minijobExceededWarning: "BABALA: Minijob Limit ({{limit}} €) naabot!",
+                overtimeHoursLabel: "Mga Overtime na Oras:",
+                languageOptions: { de: "Aleman (German)", en: "Ingles (English)", ph: "Filipino (Tagalog)" },
             }
         };
 
@@ -183,24 +246,34 @@
 
         /** Lädt Daten aus dem LocalStorage und initialisiert den Zustand. */
         function loadFromLocalStorage() {
+            // Lade Sprache
             const storedLang = localStorage.getItem(LANG_STORAGE_KEY);
             if (storedLang && translations[storedLang]) {
                 currentLang = storedLang;
             }
 
-            const storedGender = localStorage.getItem(GENDER_STORAGE_KEY); // Neu
-            if (storedGender && (storedGender === 'maskulin' || storedGender === 'feminin')) {
-                genderAppearance = storedGender;
+            // Lade Theme
+            const storedTheme = localStorage.getItem(THEME_STORAGE_KEY); 
+            if (storedTheme && ['maskulin', 'feminin', 'dark'].includes(storedTheme)) {
+                themeAppearance = storedTheme;
             }
             
             applyTranslations(); 
-            applyTheme(genderAppearance); // Neu: Theme anwenden
+            applyTheme(themeAppearance); 
 
+            // Lade Rate
             const storedRate = localStorage.getItem(RATE_STORAGE_KEY);
             if (storedRate) {
                 hourlyRate = parseFloat(storedRate);
             }
             
+            // Lade Minijob Limit
+            const storedMinijob = localStorage.getItem(MINIJOB_STORAGE_KEY);
+            if (storedMinijob) {
+                minijobLimit = parseFloat(storedMinijob);
+            }
+
+            // Lade Einträge
             const storedEntries = localStorage.getItem(ENTRIES_STORAGE_KEY);
             if (storedEntries) {
                 allEntries = JSON.parse(storedEntries).map(entry => ({
@@ -213,7 +286,8 @@
             }
 
             document.getElementById('hourlyRate').value = hourlyRate.toFixed(2);
-            populateMonthYearSelectors(true); // Initialisierung setzt den aktuellen Monat als Default
+            document.getElementById('minijobLimitInput').value = minijobLimit.toFixed(2);
+            populateMonthYearSelectors(true); 
             filterEntries();
         }
 
@@ -226,8 +300,9 @@
             }));
             localStorage.setItem(ENTRIES_STORAGE_KEY, JSON.stringify(serializableEntries));
             localStorage.setItem(RATE_STORAGE_KEY, hourlyRate.toFixed(2));
+            localStorage.setItem(MINIJOB_STORAGE_KEY, minijobLimit.toFixed(2));
             localStorage.setItem(LANG_STORAGE_KEY, currentLang);
-            localStorage.setItem(GENDER_STORAGE_KEY, genderAppearance); // Neu
+            localStorage.setItem(THEME_STORAGE_KEY, themeAppearance); 
             
             filterEntries(); 
         }
@@ -253,17 +328,23 @@
             return num.toLocaleString(locale, options);
         }
 
-        // --- Theme & Appearance Logic (Neu) ---
+        // --- Theme & Appearance Logic ---
 
-        window.setGenderAppearance = function(appearance) {
-            genderAppearance = appearance;
+        window.setThemeAppearance = function(appearance) {
+            themeAppearance = appearance;
             saveToLocalStorage();
             applyTheme(appearance);
         }
 
         function applyTheme(appearance) {
             const root = document.documentElement;
-            if (appearance === 'feminin') {
+            const body = document.body;
+            body.classList.remove('dark-mode');
+
+            if (appearance === 'dark') {
+                body.classList.add('dark-mode');
+                // Setzt alle variablen auf ihren Dark-Mode-Fallback (im CSS definiert)
+            } else if (appearance === 'feminin') {
                 // Pink/Rose Theme
                 root.style.setProperty('--color-primary', '#ec4899'); /* Pink 500 */
                 root.style.setProperty('--color-primary-dark', '#db2777'); /* Pink 600 */
@@ -272,7 +353,7 @@
                 root.style.setProperty('--color-summary-border', '#ec4899');
                 root.style.setProperty('--color-text-summary', '#be185d');
             } else {
-                // Masculine (Blue) Theme
+                // Masculine (Blue) Theme (Default)
                 root.style.setProperty('--color-primary', '#3b82f6'); 
                 root.style.setProperty('--color-primary-dark', '#2563eb'); 
                 root.style.setProperty('--color-title', '#1d4ed8'); 
@@ -281,17 +362,20 @@
                 root.style.setProperty('--color-text-summary', '#1d4ed8');
             }
 
-            const genderSelect = document.getElementById('genderAppearanceSelect');
-            if (genderSelect) {
-                genderSelect.value = appearance;
+            const themeSelect = document.getElementById('themeAppearanceSelect');
+            if (themeSelect) {
+                themeSelect.value = appearance;
             }
         }
 
 
         // --- Custom Modal / Replacement for alert() and confirm() ---
-        function showMessage(message) {
+        function showMessage(message, title = null) {
             return new Promise(resolve => {
                 const modal = document.getElementById('customModal');
+                const t = translations[currentLang];
+                
+                document.getElementById('modalTitle').textContent = title || t.appTitle;
                 document.getElementById('modalMessage').textContent = message;
                 
                 const actions = document.getElementById('modalActions');
@@ -299,7 +383,7 @@
                 
                 const okButton = document.createElement('button');
                 okButton.className = 'btn-primary';
-                okButton.textContent = 'OK';
+                okButton.textContent = (currentLang === 'de') ? 'OK' : 'OK';
                 okButton.onclick = () => {
                     modal.style.display = 'none';
                     resolve(true);
@@ -311,11 +395,13 @@
         }
         window.showMessage = showMessage; 
 
-        function showConfirm(message) {
+        function showConfirm(message, title) {
             return new Promise(resolve => {
                 const modal = document.getElementById('customModal');
-                document.getElementById('modalMessage').textContent = message;
                 const t = translations[currentLang];
+
+                document.getElementById('modalTitle').textContent = title;
+                document.getElementById('modalMessage').textContent = message;
 
                 const actions = document.getElementById('modalActions');
                 actions.innerHTML = '';
@@ -350,7 +436,6 @@
                 currentLang = lang;
                 saveToLocalStorage(); 
                 applyTranslations();
-                // Beim Sprachwechsel die Monatsnamen neu laden, aber die Auswahl beibehalten
                 populateMonthYearSelectors(false); 
                 filterEntries(); 
             }
@@ -358,17 +443,69 @@
 
         window.saveSettings = function() {
             const rateInput = document.getElementById('hourlyRate');
-            const newRate = parseFloat(rateInput.value);
+            const newRate = parseFloat(rateInput.value.replace(',', '.'));
+            
+            const minijobInput = document.getElementById('minijobLimitInput');
+            const newMinijobLimit = parseFloat(minijobInput.value.replace(',', '.'));
+
+            const t = translations[currentLang];
 
             if (isNaN(newRate) || newRate <= 0) {
-                showMessage(translations[currentLang].msgInvalidRate);
+                showMessage(t.msgInvalidRate);
+                return;
+            }
+            if (isNaN(newMinijobLimit) || newMinijobLimit <= 0) {
+                showMessage(t.msgInvalidMinijob);
                 return;
             }
             
             hourlyRate = newRate;
+            minijobLimit = newMinijobLimit;
             saveToLocalStorage();
-            showMessage(translations[currentLang].msgRateSaved(hourlyRate.toFixed(2)));
+            showMessage(t.msgRateSaved(hourlyRate.toFixed(2))); 
+            
+            filterEntries(); 
         }
+        
+        /** Funktion zum Zurücksetzen aller Daten */
+        window.resetAllData = async function() {
+            const t = translations[currentLang];
+            const confirmed = await showConfirm(t.resetConfirmMessage, t.resetConfirmTitle);
+            
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                // Lösche alle relevanten Schlüssel im LocalStorage
+                localStorage.removeItem(ENTRIES_STORAGE_KEY);
+                localStorage.removeItem(RATE_STORAGE_KEY);
+                localStorage.removeItem(MINIJOB_STORAGE_KEY);
+                localStorage.removeItem(LANG_STORAGE_KEY);
+                localStorage.removeItem(THEME_STORAGE_KEY);
+
+                // App-Zustand zurücksetzen
+                allEntries = [];
+                hourlyRate = 20.00;
+                minijobLimit = 538.00;
+                currentLang = 'de';
+                themeAppearance = 'maskulin';
+
+                // UI neu laden und Zustand anzeigen
+                loadFromLocalStorage(); 
+                
+                // Setze UI-Elemente auf Default
+                document.getElementById('hourlyRate').value = hourlyRate.toFixed(2);
+                document.getElementById('minijobLimitInput').value = minijobLimit.toFixed(2);
+                
+                showMessage(t.resetSuccess, t.appTitle);
+
+            } catch (error) {
+                console.error("Fehler beim Zurücksetzen der Daten:", error);
+                showMessage("Es gab einen Fehler beim Zurücksetzen der Daten. Versuchen Sie es erneut.");
+            }
+        }
+
 
         window.addTimeEntry = function() {
             const dateStr = document.getElementById('dateInput').value;
@@ -417,15 +554,13 @@
             allEntries.unshift(newEntry); 
             saveToLocalStorage();
             
-            // Eingabezeiten zurücksetzen, Datum bleibt auf heute
+            // Eingabezeiten zurücksetzen
             document.getElementById('startTimeInput').value = ''; 
             document.getElementById('endTimeInput').value = '';
-            
-            // Führt filterEntries aus, um die Liste im aktuellen Monat zu aktualisieren
         }
         
         window.deleteEntry = async function(id) {
-            const confirmed = await showConfirm(translations[currentLang].msgConfirmDelete);
+            const confirmed = await showConfirm(translations[currentLang].msgConfirmDelete, translations[currentLang].appTitle);
             if (!confirmed) {
                 return;
             }
@@ -507,6 +642,132 @@
 
             showMessage(t.msgExported(allEntries.length, filename));
         }
+        
+        // --- CSV Import Funktion (NEU) ---
+        window.importCSV = async function() {
+            const t = translations[currentLang];
+            const fileInput = document.getElementById('csvFileInput');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showMessage(currentLang === 'de' ? "Bitte wählen Sie eine CSV-Datei zum Import aus." : "Please select a CSV file to import.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async function(event) {
+                const csvContent = event.target.result;
+                const lines = csvContent.trim().split('\n');
+                
+                if (lines.length <= 1) { // Nur Header oder leer
+                    showMessage(t.msgImportError);
+                    return;
+                }
+
+                const separator = ';'; 
+                // Wir überspringen die Header-Zeile (lines[0])
+                const dataLines = lines.slice(1);
+                let importedCount = 0;
+                let newEntries = [];
+
+                for (const line of dataLines) {
+                    const values = line.split(separator);
+                    
+                    // Wir brauchen mindestens Datum, Start, Ende (Index 0, 1, 2)
+                    if (values.length < 3) continue; 
+
+                    try {
+                        // 1. Datum parsen (Format: "DD.MM.YYYY")
+                        const dateStr = values[0].trim().replace(/"/g, ''); 
+                        const [day, month, year] = dateStr.split('.').map(s => parseInt(s, 10));
+                        
+                        if (isNaN(day) || isNaN(month) || isNaN(year) || month < 1 || month > 12) {
+                            console.warn(`Skipping line due to invalid date: ${dateStr}`);
+                            continue; 
+                        }
+                        
+                        // 2. Zeiten parsen (Format: "HH:MM")
+                        const startTimeStr = values[1].trim().replace(/"/g, ''); 
+                        const endTimeStr = values[2].trim().replace(/"/g, '');   
+                        
+                        if (!startTimeStr || !endTimeStr || !startTimeStr.includes(':') || !endTimeStr.includes(':')) {
+                            console.warn(`Skipping line due to missing or malformed time: ${line}`);
+                            continue;
+                        }
+
+                        // Date-Objekte konstruieren (Monat ist 0-basiert in JS Date)
+                        let startDateTime = new Date(year, month - 1, day, parseInt(startTimeStr.split(':')[0]), parseInt(startTimeStr.split(':')[1]));
+                        let endDateTime = new Date(year, month - 1, day, parseInt(endTimeStr.split(':')[0]), parseInt(endTimeStr.split(':')[1]));
+                        
+                        if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
+                            console.warn(`Skipping line due to general time parsing error: ${line}`);
+                            continue;
+                        }
+
+                        // 3. Nachtschicht-Logik
+                        if (endDateTime.getTime() < startDateTime.getTime()) {
+                            endDateTime.setDate(endDateTime.getDate() + 1);
+                        }
+                        
+                        const durationMs = endDateTime.getTime() - startDateTime.getTime();
+
+                        if (durationMs <= 0 || durationMs > 24 * 60 * 60 * 1000) {
+                            console.warn(`Skipping line due to invalid duration: ${durationMs}ms`);
+                            continue;
+                        }
+
+                        // 4. Rate parsen (Optional, fällt auf den aktuellen globalen Satz zurück)
+                        let entryRate = hourlyRate;
+                        // Stundenlohn ist Index 5 im Exportformat
+                        if (values.length > 5) {
+                            const rateValueStr = values[5].trim().replace(/"/g, '').replace(',', '.'); // "20,00" -> 20.00
+                            const parsedRate = parseFloat(rateValueStr);
+                            if (!isNaN(parsedRate) && parsedRate > 0) {
+                                entryRate = parsedRate;
+                            }
+                        }
+                        
+                        // 5. Neues Entry erstellen
+                        const newEntry = {
+                            id: crypto.randomUUID(), // Neue UUID für den importierten Eintrag
+                            date: startDateTime.toISOString().slice(0, 10), // YYYY-MM-DD
+                            startTime: startDateTime,
+                            endTime: endDateTime,
+                            durationMs: durationMs,
+                            rate: entryRate 
+                        };
+
+                        newEntries.push(newEntry);
+                        importedCount++;
+
+                    } catch (e) {
+                        console.error("Fehler beim Verarbeiten der Zeile:", line, e);
+                        // Fahren Sie mit der nächsten Zeile fort
+                    }
+                }
+                
+                // Zusammenführen und speichern
+                if (newEntries.length > 0) {
+                    allEntries.unshift(...newEntries);
+                    // Sortieren nach Datum
+                    allEntries.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    saveToLocalStorage();
+                    showMessage(t.msgImportSuccess(importedCount));
+                } else if (lines.length > 1) {
+                    showMessage(t.msgImportError);
+                }
+                
+                // Eingabe zurücksetzen
+                fileInput.value = '';
+
+            };
+
+            reader.onerror = function() {
+                showMessage(t.msgImportError);
+            };
+
+            reader.readAsText(file, 'UTF-8');
+        }
 
         // --- UI Rendering & Logic ---
 
@@ -519,18 +780,27 @@
 
             document.getElementById('settingsTitle').textContent = t.settingsTitle;
             document.getElementById('rateSectionTitle').textContent = t.rateSectionTitle;
+            
+            // Rate & Minijob Labels
             document.getElementById('rateLabel').textContent = t.rateLabel;
+            document.getElementById('minijobLimitLabel').textContent = t.minijobLimitLabel;
+            
             document.getElementById('saveRateBtn').textContent = t.saveBtn;
+            
+            // Export Sektion
             document.getElementById('exportTitle').textContent = t.exportTitle;
             document.getElementById('downloadCSVBtn').textContent = t.exportBtn;
+            
+            // Import Sektion (NEU)
+            document.getElementById('importTitle').textContent = t.importTitle;
+            document.getElementById('importCSVBtn').textContent = t.importCSVBtn;
+
             document.getElementById('newEntryTitle').textContent = t.newEntryTitle;
             document.getElementById('dateLabel').textContent = t.dateLabel;
             document.getElementById('startTimeLabel').textContent = t.startTimeLabel;
             document.getElementById('endTimeLabel').textContent = t.endTimeLabel;
             document.getElementById('saveEntryBtn').textContent = t.saveEntryBtn;
             document.getElementById('summaryTitle').textContent = t.summaryTitle;
-            document.getElementById('summaryTotalTimeText').textContent = t.totalTime;
-            document.getElementById('summaryTotalEarningsText').textContent = t.totalEarnings;
             
             document.getElementById('thDate').textContent = t.tableDate;
             document.getElementById('thStart').textContent = t.tableStart;
@@ -550,16 +820,19 @@
             }
             langSelect.value = currentSelectedLang || currentLang;
 
-            // Gender Dropdown füllen
-            document.getElementById('genderLabel').textContent = t.genderLabel;
-            const genderSelect = document.getElementById('genderAppearanceSelect');
-            const currentSelectedGender = genderSelect.value;
-            genderSelect.innerHTML = '';
-            for (const key in t.genderOptions) {
-                const option = new Option(t.genderOptions[key], key);
-                genderSelect.add(option);
+            // Theme Dropdown füllen
+            document.getElementById('themeLabel').textContent = t.themeLabel;
+            const themeSelect = document.getElementById('themeAppearanceSelect');
+            const currentSelectedTheme = themeSelect.value;
+            themeSelect.innerHTML = '';
+            for (const key in t.themeOptions) {
+                const option = new Option(t.themeOptions[key], key);
+                themeSelect.add(option);
             }
-            genderSelect.value = currentSelectedGender || genderAppearance;
+            themeSelect.value = currentSelectedTheme || themeAppearance;
+            
+            // Reset Button Text
+            document.getElementById('resetDataBtn').textContent = t.resetButton;
         }
 
         /** Füllt die Monats- und Jahres-Dropdowns und setzt den Default auf den aktuellen Monat/Jahr */
@@ -632,22 +905,23 @@
                     // Anzeigeformat basierend auf der Sprache
                     const formattedDate = new Date(entry.date).toLocaleDateString(currentLang, { day: '2-digit', month: '2-digit', year: 'numeric' });
                     
+                    const entryRate = entry.rate || hourlyRate; 
                     monthlyTotalMs += entry.durationMs;
-                    monthlyTotalEarnings += decimalHours * entry.rate; 
+                    monthlyTotalEarnings += decimalHours * entryRate; 
                     
                     const startHMM = entry.startTime.toLocaleTimeString(currentLang, { hour: '2-digit', minute: '2-digit' });
                     const endHMM = entry.endTime.toLocaleTimeString(currentLang, { hour: '2-digit', minute: '2-digit' });
 
                     const row = document.createElement('tr');
-                    row.className = 'border-b border-gray-200';
+                    row.className = 'border-b border-gray-200 dark:border-gray-600';
                     row.innerHTML = `
-                        <td>${formattedDate}</td>
-                        <td>${startHMM}</td>
-                        <td>${endHMM}</td>
-                        <td>${hmmTime}</td>
-                        <td>${formatNumber(decimalHours)}</td>
-                        <td>
-                            <button onclick="deleteEntry('${entry.id}')" class="text-red-500 hover:text-red-700 p-1 rounded transition duration-150">
+                        <td class="px-2 py-2">${formattedDate}</td>
+                        <td class="px-2 py-2">${startHMM}</td>
+                        <td class="px-2 py-2">${endHMM}</td>
+                        <td class="px-2 py-2">${hmmTime}</td>
+                        <td class="px-2 py-2">${formatNumber(decimalHours)}</td>
+                        <td class="px-2 py-2">
+                            <button onclick="deleteEntry('${entry.id}')" class="text-red-500 hover:text-red-700 dark:hover:text-red-400 p-1 rounded transition duration-150">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                     <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 6h6v8H7V6z" clip-rule="evenodd" />
                                 </svg>
@@ -659,16 +933,48 @@
             }
 
             const monthlyTotalDecimalHours = msToDecimalHours(monthlyTotalMs);
+            const currentMinijobLimit = minijobLimit; 
+            const isMinijobExceeded = monthlyTotalEarnings > currentMinijobLimit && monthlyTotalEarnings > 0;
+            let overtimeHours = 0;
+            let overtimeWarningHTML = '';
+            const summaryBox = document.getElementById('summaryBox'); 
+
+            if (isMinijobExceeded && hourlyRate > 0) {
+                // Berechne die erforderlichen Stunden, um das Limit zu erreichen
+                const requiredHours = currentMinijobLimit / hourlyRate; 
+                
+                // Berechne die Überstunden (Stunden über den erforderlichen)
+                // Stellen Sie sicher, dass overtimeHours nicht negativ wird, falls Rundungsfehler auftreten
+                overtimeHours = Math.max(0, monthlyTotalDecimalHours - requiredHours);
+                
+                // Füge die Warnung und die Überstunden-Anzeige hinzu
+                let warningText = t.minijobExceededWarning.replace('{{limit}}', formatNumber(currentMinijobLimit));
+
+                overtimeWarningHTML = `
+                    <div class="mb-3 p-3 rounded-lg bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600">
+                        <p class="text-sm font-bold text-red-700 dark:text-red-300 mb-1">${warningText}</p>
+                        <p class="text-sm font-medium text-red-700 dark:text-red-300">
+                            <span class="font-bold">${t.overtimeHoursLabel}</span> 
+                            <span class="font-bold">${formatNumber(overtimeHours)}</span> ${t.hoursUnit} 
+                        </p>
+                    </div>
+                `;
+            }
             
-            document.getElementById('monthlyTotalHours').textContent = formatNumber(monthlyTotalDecimalHours);
-            document.getElementById('monthlyTotalEarnings').textContent = formatNumber(monthlyTotalEarnings);
-            document.getElementById('hoursUnit').textContent = t.hoursUnit;
-            document.getElementById('currencyUnit').textContent = t.currencyUnit;
+            // Gesamte Summary Box neu rendern
+            summaryBox.innerHTML = `
+                ${overtimeWarningHTML} 
+                <div class="summary-box border-l-4 p-4 rounded-lg">
+                    <p class="text-sm font-medium summary-text"><span id="summaryTotalTimeText">${t.totalTime}</span> <span class="font-bold">${formatNumber(monthlyTotalDecimalHours)}</span> ${t.hoursUnit}</p>
+                    <p class="text-sm font-medium summary-text"><span id="summaryTotalEarningsText">${t.totalEarnings}</span> <span class="font-bold">${formatNumber(monthlyTotalEarnings)}</span> ${t.currencyUnit}</p>
+                </div>
+            `;
         }
 
         // --- Initialization on Load ---
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Setze das Eingabedatum auf das heutige Datum
             document.getElementById('dateInput').valueAsDate = new Date();
             loadFromLocalStorage();
         });
@@ -681,55 +987,82 @@
         <!-- Titel und Einstellungs-Button -->
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-3xl font-extrabold app-title" id="appTitle">Time2Chucks</h1>
-            <button onclick="toggleSettings()" id="settingsToggleIcon" title="Einstellungen & Export" class="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full transition duration-200 shadow-md">
-                <!-- NEU: Hamburger/Menu Icon -->
+            <button onclick="toggleSettings()" id="settingsToggleIcon" title="Einstellungen & Export" class="p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-full transition duration-200 shadow-md">
+                <!-- Close/Menu Icon -->
                 <svg class="h-6 w-6 transform transition duration-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
             </button>
         </div>
 
-        <!-- Settings Content (Collapsible Card, verborgen) -->
-        <div id="settingsContent" class="card hidden mt-[-1rem] shadow-xl border border-gray-100">
-            <h2 class="text-xl font-semibold mb-3 border-b pb-2" id="settingsTitle">Einstellungen & Export</h2>
+        <!-- Settings Content (Collapsible Card) -->
+        <div id="settingsContent" class="card hidden mt-[-1rem] shadow-xl border border-gray-100 dark:border-gray-700">
+            <h2 class="text-xl font-semibold mb-3 border-b pb-2 border-gray-200 dark:border-gray-600" id="settingsTitle">Einstellungen & Export</h2>
             <div class="space-y-4">
                 
                 <!-- Sprache Sektion -->
-                <h3 class="text-lg font-medium text-gray-700" id="languageLabel">Sprache</h3>
+                <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300" id="languageLabel">Sprache</h3>
                 <div class="flex">
-                    <select id="languageSelect" onchange="setLanguage(this.value)" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500">
-                        <!-- Optionen werden von JS gefüllt -->
-                    </select>
+                    <select id="languageSelect" onchange="setLanguage(this.value)" class="w-full border rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500"></select>
                 </div>
                 
-                <!-- Erscheinungsbild Sektion (Neu) -->
-                <h3 class="text-lg font-medium text-gray-700 pt-4 border-t" id="genderLabel">Erscheinungsbild</h3>
+                <!-- Erscheinungsbild Sektion -->
+                <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 pt-4 border-t border-gray-200 dark:border-gray-600" id="themeLabel">Erscheinungsbild</h3>
                 <div class="flex">
-                    <select id="genderAppearanceSelect" onchange="setGenderAppearance(this.value)" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500">
-                        <!-- Optionen werden von JS gefüllt -->
-                    </select>
+                    <select id="themeAppearanceSelect" onchange="setThemeAppearance(this.value)" class="w-full border rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500"></select>
                 </div>
 
-                <!-- Stundenlohn Sektion -->
-                <h3 class="text-lg font-medium pt-4 border-t text-gray-700" id="rateSectionTitle">Aktuellen Stundenlohn festlegen (für neue Einträge)</h3>
-                <div class="flex flex-col sm:flex-row sm:space-x-4 space-y-3 sm:space-y-0 items-end">
-                    <div class="flex-grow w-full">
-                        <label for="hourlyRate" class="block text-sm font-medium text-gray-700 mb-1" id="rateLabel">Stundenlohn (€)</label>
-                        <input type="number" id="hourlyRate" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500" value="20.00" min="0.01" step="0.01">
+                <!-- Stundenlohn & Minijob Sektion -->
+                <h3 class="text-lg font-medium pt-4 border-t border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300" id="rateSectionTitle">Stundenlohn & Minijob-Obergrenze festlegen</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                    <!-- Stundenlohn -->
+                    <div class="w-full">
+                        <label for="hourlyRate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" id="rateLabel">Stundenlohn (€)</label>
+                        <input type="number" id="hourlyRate" class="w-full border rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500" value="20.00" min="0.01" step="0.01">
                     </div>
-                    <button onclick="saveSettings()" class="btn-primary w-full sm:w-auto" id="saveRateBtn">Speichern</button>
+                    <!-- Minijob Limit -->
+                    <div class="w-full">
+                        <label for="minijobLimitInput" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" id="minijobLimitLabel">Minijob Obergrenze (€)</label>
+                        <input type="number" id="minijobLimitInput" class="w-full border rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500" value="538.00" min="0.01" step="0.01">
+                    </div>
+                    <!-- Speichern Button -->
+                    <button onclick="saveSettings()" class="btn-primary w-full h-11" id="saveRateBtn">Speichern</button>
                 </div>
 
                 <!-- CSV Export Sektion -->
-                <h3 class="text-lg font-medium pt-4 border-t text-gray-700" id="exportTitle">Daten-Export (CSV)</h3>
-                <div class="!p-3 bg-green-100 rounded-lg">
+                <h3 class="text-lg font-medium pt-4 border-t border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300" id="exportTitle">Daten-Export (CSV)</h3>
+                <div class="!p-3 bg-green-100 dark:bg-green-900 rounded-lg">
                     <button onclick="downloadCSV()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 shadow-xl flex items-center justify-center space-x-2" id="downloadCSVBtn">
-                        <!-- SVG Icon for Download -->
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L10 11.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
                             <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v7a1 1 0 11-2 0V3a1 1 0 011-1z" clip-rule="evenodd" />
                         </svg>
                         <span>Alle Einträge als CSV herunterladen</span>
+                    </button>
+                </div>
+                
+                <!-- CSV Import Sektion (NEU) -->
+                <h3 class="text-lg font-medium pt-4 border-t border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300" id="importTitle">Daten-Import (CSV)</h3>
+                <div class="!p-3 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
+                    <input type="file" id="csvFileInput" accept=".csv" class="mb-3 w-full text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600 p-2">
+                    <button onclick="importCSV()" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 shadow-xl flex items-center justify-center space-x-2" id="importCSVBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M5.47 6.77a.75.75 0 01.02-1.06L7.25 4.5l-1.76-1.71a.75.75 0 111.04-1.08l2.25 2.25a.75.75 0 010 1.08l-2.25 2.25a.75.75 0 01-1.06-.02zm6.92 0a.75.75 0 011.06 0l2.25-2.25a.75.75 0 010-1.08l-2.25-2.25a.75.75 0 011.04-1.08l1.76 1.71-1.78 1.77a.75.75 0 01-1.06.02zM10 18a8 8 0 100-16 8 8 0 000 16zm-5-8a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clip-rule="evenodd" />
+                        </svg>
+                        <span>CSV-Datei importieren</span>
+                    </button>
+                </div>
+
+
+                <!-- Daten-Reset Sektion -->
+                <h3 class="text-lg font-medium pt-4 border-t border-gray-200 dark:border-gray-600 text-red-600 dark:text-red-400">Gefahrenzone</h3>
+                <div class="!p-3 bg-red-100 dark:bg-red-900 rounded-lg">
+                    <button onclick="resetAllData()" id="resetDataBtn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 shadow-xl flex items-center justify-center space-x-2">
+                        <!-- Trash Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 6h6v8H7V6z" clip-rule="evenodd" />
+                        </svg>
+                        <span>Alle Daten unwiderruflich löschen</span>
                     </button>
                 </div>
             </div>
@@ -740,16 +1073,16 @@
             <h2 class="text-xl font-semibold mb-3" id="newEntryTitle">Neue Arbeitszeit erfassen</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                    <label for="dateInput" class="block text-sm font-medium text-gray-700 mb-1" id="dateLabel">Datum (Starttag)</label>
-                    <input type="date" id="dateInput" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500">
+                    <label for="dateInput" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" id="dateLabel">Datum (Starttag)</label>
+                    <input type="date" id="dateInput" class="w-full border rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
                 <div>
-                    <label for="startTimeInput" class="block text-sm font-medium text-gray-700 mb-1" id="startTimeLabel">Startzeit</label>
-                    <input type="time" id="startTimeInput" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500">
+                    <label for="startTimeInput" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" id="startTimeLabel">Startzeit</label>
+                    <input type="time" id="startTimeInput" class="w-full border rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
                 <div>
-                    <label for="endTimeInput" class="block text-sm font-medium text-gray-700 mb-1" id="endTimeLabel">Endzeit (kann am nächsten Tag liegen)</label>
-                    <input type="time" id="endTimeInput" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500">
+                    <label for="endTimeInput" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" id="endTimeLabel">Endzeit (kann am nächsten Tag liegen)</label>
+                    <input type="time" id="endTimeInput" class="w-full border rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
             </div>
             <button onclick="addTimeEntry()" id="saveEntryBtn" class="btn-primary mt-4 w-full">Zeiteintrag speichern</button>
@@ -760,25 +1093,28 @@
             <h2 class="text-xl font-semibold mb-3" id="summaryTitle">Monatsübersicht & Archiv</h2>
             
             <div class="flex space-x-2 mb-4">
-                <select id="monthSelect" onchange="filterEntries()" class="flex-grow border border-gray-300 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500"></select>
-                <select id="yearSelect" onchange="filterEntries()" class="w-32 border border-gray-300 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500"></select>
+                <select id="monthSelect" onchange="filterEntries()" class="flex-grow border rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500"></select>
+                <select id="yearSelect" onchange="filterEntries()" class="w-32 border rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500"></select>
             </div>
 
-            <div class="summary-box border-l-4 p-4 mb-4 rounded-lg">
-                <p class="text-sm font-medium summary-text"><span id="summaryTotalTimeText">Gesamtzeit diesen Monat:</span> <span id="monthlyTotalHours" class="font-bold">0,00</span> <span id="hoursUnit">Stunden</span></p>
-                <p class="text-sm font-medium summary-text"><span id="summaryTotalEarningsText">Errechneter Lohn:</span> <span id="monthlyTotalEarnings" class="font-bold">0,00</span> <span id="currencyUnit">€</span></p>
+            <!-- Summary Box Container (wird durch JS befüllt, inkl. Minijob-Warnung) -->
+            <div id="summaryBox" class="mb-4">
+                <div class="summary-box border-l-4 p-4 rounded-lg">
+                    <p class="text-sm font-medium summary-text">Gesamtzeit diesen Monat: <span class="font-bold">0,00</span> Stunden</p>
+                    <p class="text-sm font-medium summary-text">Errechneter Lohn: <span class="font-bold">0,00</span> €</p>
+                </div>
             </div>
 
             <div class="overflow-x-auto">
                 <table class="summary-table w-full border-collapse">
                     <thead>
                         <tr>
-                            <th id="thDate" class="rounded-tl-lg">Datum</th>
-                            <th id="thStart">Start</th>
-                            <th id="thEnd">Ende</th>
-                            <th id="thDurationHMM">Dauer (H:MM)</th>
-                            <th id="thDurationDecimal">Dauer (Dezimal)</th>
-                            <th id="thDelete" class="rounded-tr-lg">Löschen</th>
+                            <th id="thDate" class="rounded-tl-lg px-2 py-2 text-left">Datum</th>
+                            <th id="thStart" class="px-2 py-2 text-left">Start</th>
+                            <th id="thEnd" class="px-2 py-2 text-left">Ende</th>
+                            <th id="thDurationHMM" class="px-2 py-2 text-left">Dauer (H:MM)</th>
+                            <th id="thDurationDecimal" class="rounded-tr-lg px-2 py-2 text-left">Dauer (Dezimal)</th>
+                            <th id="thDelete" class="px-2 py-2 text-left">Löschen</th>
                         </tr>
                     </thead>
                     <tbody id="timeEntryList">
@@ -792,7 +1128,8 @@
     <!-- Custom Modal / Confirmation Dialog -->
     <div id="customModal" class="modal-backdrop">
         <div class="modal-content">
-            <p id="modalMessage" class="text-lg font-semibold mb-4"></p>
+            <h3 id="modalTitle" class="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">Time2Chucks</h3>
+            <p id="modalMessage" class="text-lg mb-4"></p>
             <div id="modalActions" class="flex justify-end space-x-3">
                 <!-- Buttons will be injected here -->
             </div>
@@ -800,4 +1137,3 @@
     </div>
 </body>
 </html>
-
