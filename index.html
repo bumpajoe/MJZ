@@ -21,6 +21,8 @@
             --color-summary-bg: #eff6ff; /* Blue 50 */
             --color-summary-border: #3b82f6;
             --color-text-summary: #1d4ed8;
+            --btn-quick-time-bg: #e5e7eb;
+            --btn-quick-time-hover: #d1d5db;
         }
 
         /* --- Dark Mode Overrides (wird durch JS auf das Body-Tag angewendet) --- */
@@ -36,6 +38,18 @@
             --color-summary-bg: #4b5563;
             --color-summary-border: #60a5fa;
             --color-text-summary: #93c5fd;
+            --btn-quick-time-bg: #4b5563;
+            --btn-quick-time-hover: #6b7280;
+        }
+        
+        /* --- Feminine Mode Overrides --- */
+        .feminin-mode {
+            --color-primary: #ec4899; /* Pink 500 */
+            --color-primary-dark: #db2777; /* Pink 600 */
+            --color-title: #be185d; /* Rose 700 */
+            --color-summary-bg: #fdf2f8; /* Pink 50 */
+            --color-summary-border: #ec4899;
+            --color-text-summary: #be185d;
         }
 
         /* --- Theme-Unabhängige Basis-Styles --- */
@@ -132,6 +146,32 @@
             background-color: #6b7280;
         }
         
+        /* Quick Time Button */
+        .btn-quick-time {
+            background-color: var(--btn-quick-time-bg);
+            color: var(--text-base);
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+        .btn-quick-time:hover {
+            background-color: var(--btn-quick-time-hover);
+        }
+        
+        /* Input & Button Grouping */
+        .input-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .input-group input {
+            flex-grow: 1;
+        }
+
+
         /* --- Modal Styling --- */
         .modal-backdrop {
             position: fixed;
@@ -337,35 +377,31 @@
         }
 
         function applyTheme(appearance) {
-            const root = document.documentElement;
             const body = document.body;
-            body.classList.remove('dark-mode');
+            body.classList.remove('dark-mode', 'feminin-mode');
 
             if (appearance === 'dark') {
                 body.classList.add('dark-mode');
-                // Setzt alle variablen auf ihren Dark-Mode-Fallback (im CSS definiert)
             } else if (appearance === 'feminin') {
-                // Pink/Rose Theme
-                root.style.setProperty('--color-primary', '#ec4899'); /* Pink 500 */
-                root.style.setProperty('--color-primary-dark', '#db2777'); /* Pink 600 */
-                root.style.setProperty('--color-title', '#be185d'); /* Rose 700 */
-                root.style.setProperty('--color-summary-bg', '#fdf2f8'); /* Pink 50 */
-                root.style.setProperty('--color-summary-border', '#ec4899');
-                root.style.setProperty('--color-text-summary', '#be185d');
+                body.classList.add('feminin-mode');
             } else {
-                // Masculine (Blue) Theme (Default)
-                root.style.setProperty('--color-primary', '#3b82f6'); 
-                root.style.setProperty('--color-primary-dark', '#2563eb'); 
-                root.style.setProperty('--color-title', '#1d4ed8'); 
-                root.style.setProperty('--color-summary-bg', '#eff6ff'); 
-                root.style.setProperty('--color-summary-border', '#3b82f6');
-                root.style.setProperty('--color-text-summary', '#1d4ed8');
+                // Masculine (Blue) Theme (Default is applied via CSS root variables)
             }
 
             const themeSelect = document.getElementById('themeAppearanceSelect');
             if (themeSelect) {
                 themeSelect.value = appearance;
             }
+        }
+
+        /** Füllt das Zeit-Inputfeld mit der aktuellen Zeit */
+        window.setCurrentTime = function(elementId) {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            
+            // Setzt die Zeit im Format HH:MM
+            document.getElementById(elementId).value = `${hours}:${minutes}`;
         }
 
 
@@ -443,9 +479,11 @@
 
         window.saveSettings = function() {
             const rateInput = document.getElementById('hourlyRate');
+            // Ersetze Komma durch Punkt für das Parsen
             const newRate = parseFloat(rateInput.value.replace(',', '.'));
             
             const minijobInput = document.getElementById('minijobLimitInput');
+            // Ersetze Komma durch Punkt für das Parsen
             const newMinijobLimit = parseFloat(minijobInput.value.replace(',', '.'));
 
             const t = translations[currentLang];
@@ -578,10 +616,12 @@
 
             if (isHidden) {
                 content.classList.remove('hidden');
-                icon.classList.add('rotate-45'); 
+                // Ändere das Menü-Icon zu einem Close-Icon (X)
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />'; 
             } else {
                 content.classList.add('hidden');
-                icon.classList.remove('rotate-45');
+                // Setze auf das Menü-Icon (Hamburger) zurück
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />';
             }
         }
 
@@ -643,7 +683,7 @@
             showMessage(t.msgExported(allEntries.length, filename));
         }
         
-        // --- CSV Import Funktion (NEU) ---
+        // --- CSV Import Funktion ---
         window.importCSV = async function() {
             const t = translations[currentLang];
             const fileInput = document.getElementById('csvFileInput');
@@ -988,7 +1028,7 @@
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-3xl font-extrabold app-title" id="appTitle">Time2Chucks</h1>
             <button onclick="toggleSettings()" id="settingsToggleIcon" title="Einstellungen & Export" class="p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-full transition duration-200 shadow-md">
-                <!-- Close/Menu Icon -->
+                <!-- Hamburger Icon -->
                 <svg class="h-6 w-6 transform transition duration-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
@@ -1041,7 +1081,7 @@
                     </button>
                 </div>
                 
-                <!-- CSV Import Sektion (NEU) -->
+                <!-- CSV Import Sektion -->
                 <h3 class="text-lg font-medium pt-4 border-t border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300" id="importTitle">Daten-Import (CSV)</h3>
                 <div class="!p-3 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
                     <input type="file" id="csvFileInput" accept=".csv" class="mb-3 w-full text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600 p-2">
@@ -1072,17 +1112,38 @@
         <div class="card">
             <h2 class="text-xl font-semibold mb-3" id="newEntryTitle">Neue Arbeitszeit erfassen</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Datum -->
                 <div>
                     <label for="dateInput" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" id="dateLabel">Datum (Starttag)</label>
                     <input type="date" id="dateInput" class="w-full border rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
+                
+                <!-- Startzeit mit Button -->
                 <div>
                     <label for="startTimeInput" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" id="startTimeLabel">Startzeit</label>
-                    <input type="time" id="startTimeInput" class="w-full border rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500">
+                    <div class="input-group">
+                        <input type="time" id="startTimeInput" class="border rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500">
+                        <button onclick="setCurrentTime('startTimeInput')" title="Aktuelle Zeit einfügen" class="btn-quick-time">
+                            <!-- Clock Icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l3 3a1 1 0 001.414-1.414L11 9.586V6z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
+                
+                <!-- Endzeit mit Button -->
                 <div>
                     <label for="endTimeInput" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" id="endTimeLabel">Endzeit (kann am nächsten Tag liegen)</label>
-                    <input type="time" id="endTimeInput" class="w-full border rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500">
+                    <div class="input-group">
+                        <input type="time" id="endTimeInput" class="border rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500">
+                        <button onclick="setCurrentTime('endTimeInput')" title="Aktuelle Zeit einfügen" class="btn-quick-time">
+                            <!-- Clock Icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l3 3a1 1 0 001.414-1.414L11 9.586V6z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
             <button onclick="addTimeEntry()" id="saveEntryBtn" class="btn-primary mt-4 w-full">Zeiteintrag speichern</button>
